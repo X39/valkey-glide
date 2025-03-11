@@ -1,0 +1,9 @@
+[package]
+name = "runner"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bollard = "0.18.1"
+clap = { version = "4.5.32", features = ["default", "cargo"] }
+tokio = { version = "1.44.0", features = ["rt", "rt-multi-thread", "macros"] }
