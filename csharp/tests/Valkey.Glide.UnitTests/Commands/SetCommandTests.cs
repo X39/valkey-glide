@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 using NSubstitute;
+using NSubstitute.Core;
+
 using Valkey.Glide.Commands;
 using Valkey.Glide.InterOp.Native;
 using Valkey.Glide.UnitTests.Fixtures;
@@ -66,7 +68,7 @@ public class SetCommandTests(ValkeyAspireFixture fixture) : IClassFixture<Valkey
     public async Task CheckSetCommandSyntaxAsync(string method, object[] args, string command)
     {
         // Arrange
-        var client = Substitute.For<IGlideClient>();
+        IGlideClient? client = Substitute.For<IGlideClient>();
         client.CommandAsync(Arg.Any<ERequestType>(), Arg.Any<string[]>())
             .Returns(Task.FromResult(InterOp.Value.CreateNone()));
 
@@ -86,10 +88,10 @@ public class SetCommandTests(ValkeyAspireFixture fixture) : IClassFixture<Valkey
                         }
                     )
                     .ToArray();
-                var types = args.Select(e => e.GetType())
+                Type[]? types = args.Select(e => e.GetType())
                     .Prepend(typeof(IGlideClient))
                     .ToArray();
-                var methodInfo = typeof(SetCommands).GetMethod(method, types);
+                MethodInfo? methodInfo = typeof(SetCommands).GetMethod(method, types);
                 Assert.NotNull(methodInfo);
                 switch (methodInfo.Invoke(null, [client, ..args]))
                 {
@@ -107,10 +109,10 @@ public class SetCommandTests(ValkeyAspireFixture fixture) : IClassFixture<Valkey
         );
 
         // Assert
-        var call = Assert.Single(client.ReceivedCalls());
+        ICall? call = Assert.Single(client.ReceivedCalls());
         Assert.Equal(ERequestType.Set, call.GetArguments()[0]);
-        var parameters = (IEnumerable<string>) call.GetArguments()[1]!;
-        var input = string.Join(" ", parameters);
+        IEnumerable<string>? parameters = (IEnumerable<string>) call.GetArguments()[1]!;
+        string? input = string.Join(" ", parameters);
         Assert.Equal(command, input);
     }
 

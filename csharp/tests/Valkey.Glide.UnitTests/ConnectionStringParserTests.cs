@@ -32,7 +32,7 @@ public sealed class ConnectionStringParserTests
         const string connectionString = "HOST=srv01.example.com:1234,srv02.example.com:5678;";
 
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
 
         // Assert
         Assert.Collection(
@@ -56,7 +56,7 @@ public sealed class ConnectionStringParserTests
         // Arrange
         const string connectionString = "HOST=srv01.example.com,srv02.example.com,srv03.example.com:1234;";
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
 
         // Assert
         Assert.Collection(
@@ -86,10 +86,10 @@ public sealed class ConnectionStringParserTests
         const string connectionString = "HOST=srv01.example.com;";
 
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
 
         // Assert
-        var node = Assert.Single(result.Addresses);
+        Node node = Assert.Single(result.Addresses);
         Assert.Equal("srv01.example.com", node.Address);
         Assert.Equal(ValKeyConstants.DefaultPort, node.Port);
     }
@@ -101,10 +101,10 @@ public sealed class ConnectionStringParserTests
         const string connectionString = "HOST=srv01.example.com:1234;";
 
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
 
         // Assert
-        var node = Assert.Single(result.Addresses);
+        Node node = Assert.Single(result.Addresses);
         Assert.Equal("srv01.example.com", node.Address);
         Assert.Equal(1234, node.Port);
     }
@@ -117,7 +117,7 @@ public sealed class ConnectionStringParserTests
             "   ;   HOST   =   ,   srv01.example.com  :   1234 , srv02.example.com   : 5678 ,  ;    ";
 
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
 
         // Assert
         Assert.Collection(
@@ -190,7 +190,7 @@ public sealed class ConnectionStringParserTests
         // Arrange
         const string connectionString = "CLIENTNAME=test-client;";
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
         // Assert
         Assert.Equal("test-client", result.ClientName);
     }
@@ -201,7 +201,7 @@ public sealed class ConnectionStringParserTests
         // Arrange
         const string connectionString = "CLIENTNAME=;";
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
         // Assert
         Assert.Null(result.ClientName);
     }
@@ -223,7 +223,7 @@ public sealed class ConnectionStringParserTests
     {
         // Arrange
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
 
         // Assert
         Assert.Equal(expected, result.ClusterMode);
@@ -243,7 +243,7 @@ public sealed class ConnectionStringParserTests
     {
         // Arrange
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
 
         // Assert
         Assert.Equal(expected, result.Protocol);
@@ -267,7 +267,7 @@ public sealed class ConnectionStringParserTests
     {
         // Arrange
         // Act
-        var result = ConnectionStringParser.Parse(connectionString);
+        ConnectionRequest result = ConnectionStringParser.Parse(connectionString);
 
         // Assert
         Assert.Equal(expected, result.TlsMode);
