@@ -5,8 +5,13 @@ using System.Diagnostics;
 using System.Text.Json;
 using CommandLine;
 using LinqStatistics;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using Valkey.Glide;
+using Valkey.Glide.Commands;
+using Valkey.Glide.InterOp;
+using Valkey.Glide.InterOp.Native;
+using ETlsMode = Valkey.Glide.InterOp.ETlsMode;
 
 namespace csharp_benchmark;
 
@@ -261,10 +266,12 @@ public static class MainClass
         {
             ClientWrapper[] clients = await CreateClients(clientCount, () =>
             {
-                BaseClient glide_client = new GlideClient(host, PORT, useTLS);
+                ConnectionConfigBuilder builder = new ConnectionConfigBuilder().WithAddress(host, PORT)
+                    .WithTlsMode(ETlsMode.SecureTls);
+                GlideClient glide_client = new GlideClient(builder);
                 return Task.FromResult<(Func<string, Task<string?>>, Func<string, string, Task>, Action)>(
-                    (async (key) => await glide_client.Get(key),
-                        async (key, value) => await glide_client.Set(key, value),
+                    (async (key) => await glide_client.GetAsync(key),
+                        async (key, value) => await glide_client.SetAsync(key, value),
                         () => glide_client.Dispose()));
             });
 
@@ -311,7 +318,7 @@ public static class MainClass
         _ = Parser.Default
             .ParseArguments<CommandLineOptions>(args).WithParsed(parsed => options = parsed);
 
-        Logger.SetLoggerConfig(Level.Info, Path.GetFileNameWithoutExtension(options.ResultsFile));
+        NativeClient.Initialize(ELoggerLevel.Info, Path.GetFileNameWithoutExtension(options.ResultsFile));
         IEnumerable<(int concurrentTasks, int dataSize, int clientCount)> product = options.ConcurrentTasks.SelectMany(concurrentTasks =>
             options.ClientCount.Select(clientCount => (concurrentTasks, options.DataSize, clientCount))).Where(tuple => tuple.concurrentTasks >= tuple.clientCount);
         foreach ((int concurrentTasks, int dataSize, int clientCount) in product)

@@ -1,64 +1,54 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>12.0</LangVersion>
+
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
-    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
-    <EnableNETAnalyzers>false</EnableNETAnalyzers>
-    <NuGetAudit>false</NuGetAudit>
-    <WarningLevel>0</WarningLevel>
-    <IsPackable>false</IsPackable>
-    <OutputType>exe</OutputType>
-    <Configurations>Debug;Release;Lint</Configurations>
-  </PropertyGroup>
-
-  <!-- Enable analysis and un-suppress warnings only in `Lint` configuration -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Lint'">
-    <LangVersion>12.0</LangVersion>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <NuGetAudit>true</NuGetAudit>
-    <WarningLevel>4</WarningLevel>
-    <AnalysisLevel>latest</AnalysisLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-
-  <!-- Workaround for https://github.com/dotnet/roslyn/issues/41640 -->
-  <PropertyGroup>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;CS1573;CS1587</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageReference Include="xunit.v3" Version="1.0.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.1">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <!-- MIT license -->
+    <PackageReference Include="Aspire.Hosting.Testing" Version="9.1.0"/>
+    <!-- MIT license -->
     <PackageReference Include="coverlet.collector" Version="6.0.4">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- MIT license -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0"/>
+    <!-- BSD-3-Clause license -->
+    <PackageReference Include="NSubstitute" Version="5.3.0"/>
+    <!-- MIT license -->
+    <PackageReference Include="NSubstitute.Analyzers.CSharp" Version="1.0.17">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- Apache-2.0 license -->
+    <PackageReference Include="xunit" Version="2.9.3"/>
+    <!-- Apache-2.0 license -->
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\sources\Valkey.Glide\Valkey.Glide.csproj" />
+    <Using Include="System.Net"/>
+    <Using Include="Microsoft.Extensions.DependencyInjection"/>
+    <Using Include="Aspire.Hosting.ApplicationModel"/>
+    <Using Include="Aspire.Hosting.Testing"/>
+    <Using Include="Xunit"/>
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="Xunit" />
-    <Using Include="Valkey.Glide" />
+    <ProjectReference Include="..\..\sources\Valkey.Glide.AppHost\Valkey.Glide.AppHost.csproj"/>
+    <ProjectReference Include="..\..\sources\Valkey.Glide.Hosting\Valkey.Glide.Hosting.csproj"/>
+    <ProjectReference Include="..\..\sources\Valkey.Glide.InterOp\Valkey.Glide.InterOp.csproj"/>
+    <ProjectReference Include="..\..\sources\Valkey.Glide\Valkey.Glide.csproj"/>
   </ItemGroup>
 
 </Project>

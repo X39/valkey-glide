@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>Valkey.Glide</RootNamespace>
-    <AssemblyName>Valkey.Glide</AssemblyName>
+    <RootNamespace>Valkey.Glide.Hosting</RootNamespace>
+    <AssemblyName>Valkey.Glide.Hosting</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>12.0</LangVersion>
@@ -36,28 +36,12 @@
 
   <ItemGroup>
     <!-- MIT license -->
-    <PackageReference Include="JetBrains.Annotations" Version="2024.3.0"/>
-    <!-- MIT license -->
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Valkey.Glide.InterOp\Valkey.Glide.InterOp.csproj"/>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Language.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Language.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Properties\Language.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Language.resx</DependentUpon>
-    </Compile>
+    <ProjectReference Include="..\Valkey.Glide\Valkey.Glide.csproj"/>
   </ItemGroup>
 
 </Project>
