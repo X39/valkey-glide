@@ -16,7 +16,7 @@ namespace Valkey.Glide.Commands;
 public static partial class CustomCommand
 {
     /// <summary>
-    /// Creates a new instance of the <see cref="CustomCommand{T1}"/> structure with the specified argument.
+    /// Creates a new instance oaf the <see cref="CustomCommand{T1}"/> structure with the specified argument.
     /// </summary>
     /// <typeparam name="T1">The type of the first argument for the command.</typeparam>
     /// <param name="Arg1">The value of the first argument to be passed to the command.</param>

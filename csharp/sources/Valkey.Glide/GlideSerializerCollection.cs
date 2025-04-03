@@ -1,6 +1,7 @@
 ﻿// Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0
 
 using System.Collections.Immutable;
+using Valkey.Glide.InterOp.Parameter;
 
 namespace Valkey.Glide;
 
@@ -53,7 +54,7 @@ public sealed class GlideSerializerCollection
         }
     }
 
-    public string ToParameter<T>(T t)
+    public IParameter ToParameter<T>(T t)
     {
         // ReSharper disable once InconsistentlySynchronizedField -- We do not need to lock on this. Inconsistencies are "ok"
         if (!_sealed)

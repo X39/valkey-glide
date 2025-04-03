@@ -1,13 +1,14 @@
 ﻿using System.Runtime.CompilerServices;
+using Valkey.Glide.InterOp.Parameter;
 
 namespace Valkey.Glide;
 
 internal static class InternalExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static string AsRedisInteger(this string value) => value;
+    public static StringParameter AsRedisInteger(this string value) => value;
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static string AsRedisCommandText(this string value) => value;
+    public static StringParameter AsRedisCommandText(this string value) => value;
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static string AsRedisString(this string value) => $"\"{value.Replace("\"", "\\\"")}\"";
+    public static StringParameter AsRedisString(this string value) => value;
 }

@@ -2,6 +2,7 @@
 using System.Text;
 using Valkey.Glide.InterOp.Exceptions;
 using Valkey.Glide.InterOp.Native;
+using Valkey.Glide.InterOp.Parameter;
 using Valkey.Glide.InterOp.Routing;
 
 namespace Valkey.Glide.InterOp;
@@ -14,7 +15,7 @@ namespace Valkey.Glide.InterOp;
 /// This class ensures the proper management of unmanaged resources and provides both synchronous and asynchronous
 /// methods for interacting with the native system. It should be disposed of correctly to release resources.
 /// </remarks>
-public sealed class NativeClient : IDisposable, INativeClient
+public sealed partial class NativeClient : IDisposable, INativeClient
 {
     // Do not modify! We need to keep this reference at a root to prevent GC!
     private static readonly CommandCallbackDelegate CommandCallbackDel = CommandCallback;
@@ -26,7 +27,9 @@ public sealed class NativeClient : IDisposable, INativeClient
     internal const int SmallStringOptimizationBuffer = 100;
 
 
-    public unsafe NativeClient(ConnectionRequest request)
+    public unsafe NativeClient(
+        ConnectionRequest request
+    )
     {
         request.Validate();
 
@@ -164,7 +167,8 @@ public sealed class NativeClient : IDisposable, INativeClient
                     case ECreateClientHandleCode.ConnectionIoError:
                         if (result.error_string is null)
                             throw new ConnectionIoException("Unknown io exception");
-                        throw new ConnectionIoException(HelperMethods.HandleString(result.error_string) ?? "Unknown io exception");
+                        throw new ConnectionIoException(HelperMethods.HandleString(result.error_string) ??
+                                                        "Unknown io exception");
                     default:
                         if (result.error_string is null)
                             throw new Exception("Unknown error");
@@ -180,7 +184,9 @@ public sealed class NativeClient : IDisposable, INativeClient
             }
         }
 
-        byte* MarshalCollectingString(string? input)
+        byte* MarshalCollectingString(
+            string? input
+        )
         {
             if (input is null)
                 return null;
@@ -190,7 +196,9 @@ public sealed class NativeClient : IDisposable, INativeClient
         }
     }
 
-    private static unsafe void MarshalFree(byte* buffer)
+    private static unsafe void MarshalFree(
+        byte* buffer
+    )
     {
         if (buffer is null)
             return;
@@ -199,7 +207,11 @@ public sealed class NativeClient : IDisposable, INativeClient
             Marshal.FreeCoTaskMem(ptr);
     }
 
-    private static unsafe byte* MarshalUtf8String(string s, byte* buffer = null, int bufferLength = 0)
+    private static unsafe byte* MarshalUtf8String(
+        string s,
+        byte* buffer = null,
+        int bufferLength = 0
+    )
     {
         if (buffer is null && bufferLength is not 0)
             throw new ArgumentException("Buffer is null and bufferLength is not 0", nameof(buffer));
@@ -233,9 +245,17 @@ public sealed class NativeClient : IDisposable, INativeClient
     }
 
 
-    private delegate void CommandCallbackDelegate([In] nint data, [In] int success, [In] Native.Value payload);
+    private delegate void CommandCallbackDelegate(
+        [In] nint data,
+        [In] int success,
+        [In] Native.Value payload
+    );
 
-    private static void CommandCallback([In] nint data, [In] int success, [In] Native.Value payload)
+    private static void CommandCallback(
+        [In] nint data,
+        [In] int success,
+        [In] Native.Value payload
+    )
     {
         try
         {
@@ -285,8 +305,11 @@ public sealed class NativeClient : IDisposable, INativeClient
         ReleaseUnmanagedResources();
     }
 
-    public unsafe Task<Value> SendCommandAsync<TRoutingInfo>(ERequestType requestType, TRoutingInfo routingInfo,
-        params string[] args)
+    public unsafe Task<Value> SendCommandAsync<TRoutingInfo>(
+        ERequestType requestType,
+        TRoutingInfo routingInfo,
+        params IParameter[] args // ToDo: Use Generic with multiple overloads to support this without boxing
+    )
         where TRoutingInfo : IRoutingInfo
     {
         // ReSharper disable once InconsistentlySynchronizedField -- The lock is done to prevent double-free in all scenarios
@@ -298,72 +321,46 @@ public sealed class NativeClient : IDisposable, INativeClient
         var bytes = new List<nint>();
         try
         {
-            byte*[] argsArr = new byte*[args.Length];
-            try
-            {
-                if (args.Length <= SmallStringOptimizationArgs)
-                {
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        // ReSharper disable once StackAllocInsideLoop
-                        // We do this intentionally here in a "low allocation" (max: 20 * 100 bytes) environment
-                        byte* buffer = stackalloc byte[SmallStringOptimizationBuffer];
-                        byte* ptr = MarshalUtf8String(args[i], buffer, SmallStringOptimizationBuffer);
-                        argsArr[i] = ptr;
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        byte* ptr = MarshalUtf8String(args[i]);
-                        argsArr[i] = ptr;
-                    }
-                }
+            // ToDo: Optimize using stackalloc and ArrayPool
+            var nativeParameters =
+                args.Select(e => e.ToNative(MarshalCollectingString, MarshalCollectingBytes)).ToArray();
+            // ToDo: Optimize using stackalloc and ArrayPool
+            var routingInfoNative = routingInfo.ToNative(MarshalCollectingString, MarshalCollectingBytes);
 
-                CommandResult result;
-                var routingInfoNative = routingInfo.ToNative(MarshalCollectingString, MarshalCollectingBytes);
-                if (routingInfoNative is { } routingInfoNativeValue)
-                {
-                    fixed (byte** argsArrPtr = argsArr)
-                        result = Imports.command(
-                            // ReSharper disable once InconsistentlySynchronizedField -- The lock is done to prevent double-free in all scenarios
-                            _handle.Value,
-                            CommandCallbackFptr,
-                            GCHandle.ToIntPtr(dataHandle),
-                            requestType,
-                            &routingInfoNativeValue,
-                            argsArrPtr,
-                            argsArr.Length
-                        );
-                }
-                else
-                {
-                    fixed (byte** argsArrPtr = argsArr)
-                        result = Imports.command(
-                            // ReSharper disable once InconsistentlySynchronizedField -- The lock is done to prevent double-free in all scenarios
-                            _handle.Value,
-                            CommandCallbackFptr,
-                            GCHandle.ToIntPtr(dataHandle),
-                            requestType,
-                            null,
-                            argsArrPtr,
-                            argsArr.Length
-                        );
-                }
-
-                if (result.success != 0 /* is true */)
-                    return tcs.Task;
-                else
-                    throw new Exception(HelperMethods.HandleString(result.error_string));
-            }
-            finally
+            CommandResult result;
+            if (routingInfoNative is { } routingInfoNativeValue)
             {
-                foreach (byte* t in argsArr)
-                {
-                    MarshalFree(t);
-                }
+                fixed (Native.Parameter.Parameter* nativeParametersPtr = nativeParameters)
+                    result = Imports.command(
+                        // ReSharper disable once InconsistentlySynchronizedField -- The lock is done to prevent double-free in all scenarios
+                        _handle.Value,
+                        CommandCallbackFptr,
+                        GCHandle.ToIntPtr(dataHandle),
+                        requestType,
+                        &routingInfoNativeValue,
+                        nativeParametersPtr,
+                        nativeParameters.Length
+                    );
             }
+            else
+            {
+                fixed (Native.Parameter.Parameter* nativeParametersPtr = nativeParameters)
+                    result = Imports.command(
+                        // ReSharper disable once InconsistentlySynchronizedField -- The lock is done to prevent double-free in all scenarios
+                        _handle.Value,
+                        CommandCallbackFptr,
+                        GCHandle.ToIntPtr(dataHandle),
+                        requestType,
+                        null,
+                        nativeParametersPtr,
+                        nativeParameters.Length
+                    );
+            }
+
+            if (result.success != 0 /* is true */)
+                return tcs.Task;
+            else
+                throw new Exception(HelperMethods.HandleString(result.error_string));
         }
         catch
         {
@@ -378,7 +375,9 @@ public sealed class NativeClient : IDisposable, INativeClient
             }
         }
 
-        byte* MarshalCollectingString(string? input)
+        byte* MarshalCollectingString(
+            string? input
+        )
         {
             if (input is null)
                 return null;
@@ -387,7 +386,9 @@ public sealed class NativeClient : IDisposable, INativeClient
             return ptr;
         }
 
-        nint MarshalCollectingBytes(int size)
+        nint MarshalCollectingBytes(
+            int size
+        )
         {
             nint ptr = Marshal.AllocHGlobal(size);
             bytes.Add(ptr);
@@ -395,7 +396,10 @@ public sealed class NativeClient : IDisposable, INativeClient
         }
     }
 
-    private static unsafe Value FromNativeValue(Native.Value input, bool free = true)
+    private static unsafe Value FromNativeValue(
+        Native.Value input,
+        bool free = true
+    )
     {
         try
         {
@@ -456,7 +460,8 @@ public sealed class NativeClient : IDisposable, INativeClient
                     {
                         StringPair* ptr = (StringPair*)input.data.ptr;
                         string? key = HelperMethods.HandleString(ptr->a_start, (int)(ptr->a_end - ptr->a_start), false);
-                        string? value = HelperMethods.HandleString(ptr->a_start, (int)(ptr->a_end - ptr->a_start), false);
+                        string? value =
+                            HelperMethods.HandleString(ptr->a_start, (int)(ptr->a_end - ptr->a_start), false);
 
                         return Value.CreateFormatString(key, value);
                     }

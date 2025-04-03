@@ -42,6 +42,7 @@ pub fn grab_vec<TIn, TOut, TErr>(
     }
 }
 
+#[allow(dead_code)]
 pub fn grab_vec_str(
     input: *const *const c_char,
     len: usize,

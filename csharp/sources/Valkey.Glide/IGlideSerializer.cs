@@ -1,4 +1,6 @@
-﻿namespace Valkey.Glide;
+﻿using Valkey.Glide.InterOp.Parameter;
+
+namespace Valkey.Glide;
 
 /// <summary>
 /// Defines the contract for a transformer that converts an object of type <typeparamref name="TValue"/>
@@ -12,5 +14,5 @@ public interface IGlideSerializer<in TValue>
     /// </summary>
     /// <param name="t">The object to be transformed into a parameter representation.</param>
     /// <returns>A string representation of the specified object.</returns>
-    string ToValkey(TValue t);
+    IParameter ToValkey(TValue t);
 }

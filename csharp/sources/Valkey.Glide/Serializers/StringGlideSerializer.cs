@@ -1,5 +1,7 @@
 ﻿// Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0
 
+using Valkey.Glide.InterOp.Parameter;
+
 namespace Valkey.Glide.Serializers;
 
 /// <summary>
@@ -7,5 +9,5 @@ namespace Valkey.Glide.Serializers;
 /// </summary>
 public class StringGlideSerializer : IGlideSerializer<string>
 {
-    public string ToValkey(string t) => t.AsRedisString(); // ToDo: Figure out whether this is actually needed (will be obsolete once Parameter struct is added anyways)
+    public IParameter ToValkey(string t) => t.AsRedisString(); // ToDo: Figure out whether this is actually needed (will be obsolete once Parameter struct is added anyways)
 }

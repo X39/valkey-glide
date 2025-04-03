@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Valkey.Glide.InterOp;
 using Valkey.Glide.InterOp.Native;
+using Valkey.Glide.InterOp.Parameter;
 using Valkey.Glide.InterOp.Routing;
 using ConnectionRequest = Valkey.Glide.InterOp.ConnectionRequest;
 
@@ -34,12 +35,12 @@ namespace DotNetFrameworkSample
                 // With the native client only, you need to do a few extra steps to get the commands working.
                 // Again: Feel free to clone the necessary abstractions into your code base.
                 var guidString = Guid.NewGuid().ToString();
-                var setResultValue = await nativeClient.SendCommandAsync(ERequestType.Set, new NoRouting(), "some-key", guidString);
+                var setResultValue = await nativeClient.SendCommandAsync(ERequestType.Set, new NoRouting(), new StringParameter("some-key"), new StringParameter(guidString));
                 if (!setResultValue.IsOk())
                     throw new Exception("Failed to set value");
 
 
-                var resultValue = await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), "some-key");
+                var resultValue = await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), new StringParameter("some-key"));
                 if (!resultValue.IsString(out var value) || value != guidString)
                     throw new Exception("Failed to get value");
             }

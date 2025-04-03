@@ -5,6 +5,7 @@ using Valkey.Glide.Commands;
 using Valkey.Glide.Data;
 using Valkey.Glide.InterOp;
 using Valkey.Glide.InterOp.Native;
+using Valkey.Glide.InterOp.Parameter;
 using Valkey.Glide.InterOp.Routing;
 using Valkey.Glide.ResponseHandlers;
 using Value = Valkey.Glide.InterOp.Value;
@@ -19,7 +20,7 @@ public class CustomCommandBuilderTests
     public CustomCommandBuilderTests()
     {
         _nativeClientSubstitute = Substitute.For<INativeClient>();
-        _nativeClientSubstitute.SendCommandAsync(Arg.Any<ERequestType>(), Arg.Any<IRoutingInfo>(), Arg.Any<string[]>())
+        _nativeClientSubstitute.SendCommandAsync(Arg.Any<ERequestType>(), Arg.Any<IRoutingInfo>(), Arg.Any<IParameter[]>())
             .ReturnsForAnyArgs(Value.CreateOkay());
         var serializerCollection = new GlideSerializerCollection();
         serializerCollection.RegisterDefaultSerializers();
@@ -40,7 +41,7 @@ public class CustomCommandBuilderTests
 
         // Assert
         await _nativeClientSubstitute.Received(1).SendCommandAsync(ERequestType.CustomCommand, Arg.Any<IRoutingInfo>(),
-            ["SET", "foo", "\"bar\""]);
+            [new StringParameter("SET"), new StringParameter("foo"), new StringParameter("\"bar\"")]);
     }
 
     [Fact(DisplayName = "SET foo \"bar\"")]

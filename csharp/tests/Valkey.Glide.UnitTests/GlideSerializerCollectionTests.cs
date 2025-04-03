@@ -1,6 +1,7 @@
 ﻿// Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0
 
 using NSubstitute;
+using Valkey.Glide.InterOp.Parameter;
 using Valkey.Glide.Serializers;
 
 namespace Valkey.Glide.UnitTests;
@@ -93,12 +94,13 @@ public sealed class GlideSerializerCollectionTests
         // Arrange
         GlideSerializerCollection glideSerializerCollection = new();
         var transformer = Substitute.For<IGlideSerializer<string>>();
-        transformer.ToValkey(Arg.Any<string>()).Returns("foobar");
+        transformer.ToValkey(Arg.Any<string>()).Returns(new StringParameter("foobar"));
         glideSerializerCollection.RegisterSerializer(transformer);
         glideSerializerCollection.Seal();
 
         // Act
         // Assert
-        Assert.Equal("foobar", glideSerializerCollection.ToParameter("test"));
+        var parameter = Assert.IsType<StringParameter>(glideSerializerCollection.ToParameter("test"));
+        Assert.Equal("foobar", parameter);
     }
 }

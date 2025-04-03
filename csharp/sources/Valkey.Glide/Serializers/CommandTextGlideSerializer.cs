@@ -1,6 +1,7 @@
 ﻿// Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0
 
 using Valkey.Glide.Data;
+using Valkey.Glide.InterOp.Parameter;
 
 namespace Valkey.Glide.Serializers;
 
@@ -10,5 +11,5 @@ namespace Valkey.Glide.Serializers;
 /// </summary>
 public sealed class CommandTextGlideSerializer : IGlideSerializer<CommandText>
 {
-    public string ToValkey(CommandText t) => t.Text;
+    public IParameter ToValkey(CommandText t) => t.Text.AsRedisCommandText();
 }

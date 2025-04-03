@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Valkey.Glide.Commands.Abstraction;
 using Valkey.Glide.InterOp.Native;
+using Valkey.Glide.InterOp.Parameter;
 using Valkey.Glide.InterOp.Routing;
 using Valkey.Glide.ResponseHandlers;
 using Value = Valkey.Glide.InterOp.Value;
@@ -202,7 +203,7 @@ public readonly struct SetCommand<TRoutingInfo, TValue, TResponseHandler, TResul
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private Task<Value> ExecuteTtlWithGet(
         IGlideClient client,
-        string[] ttlParameters,
+        IParameter[] ttlParameters,
         CancellationToken cancellationToken
     )
     {
@@ -214,7 +215,7 @@ public readonly struct SetCommand<TRoutingInfo, TValue, TResponseHandler, TResul
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private Task<Value> ExecuteInner(
         IGlideClient client,
-        string[] ttlParameters,
+        IParameter[] ttlParameters,
         [SuppressMessage("ReSharper", "UnusedParameter.Local")]
         CancellationToken cancellationToken
     )

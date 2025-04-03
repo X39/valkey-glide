@@ -4,18 +4,19 @@ extern crate core;
 
 mod apihandle;
 mod buffering;
+mod conreq;
 mod data;
 mod helpers;
 mod logging;
+mod parameter;
 mod routing;
 mod value;
-mod conreq;
-mod parameter;
 
-use crate::apihandle::Handle;
+use crate::apihandle::{CommandParameter, Handle};
 use crate::buffering::FFIBuffer;
 use crate::conreq::ConnectionRequest;
 use crate::data::*;
+use crate::parameter::Parameter;
 use crate::value::Value;
 use glide_core::client::ConnectionError;
 use glide_core::request_type::RequestType;
@@ -71,8 +72,7 @@ pub extern "C-unwind" fn csharp_set_logging_hooks(
         INITIATE_ONCE.init_once.get_or_init(|| {
             // ToDo: Rework result so this hacky way of shutting up things is no longer necessary
 
-            let stdout_fmt = tracing_subscriber::fmt::layer()
-                .with_filter(LevelFilter::OFF);
+            let stdout_fmt = tracing_subscriber::fmt::layer().with_filter(LevelFilter::OFF);
             let file_appender = LazyRollingFileAppender::stfu();
             let file_fmt = tracing_subscriber::fmt::layer()
                 .with_writer(file_appender)
@@ -107,7 +107,6 @@ pub extern "C-unwind" fn csharp_set_logging_hooks(
             reloads
         });
     };
-
 }
 
 /// # Summary
@@ -250,7 +249,7 @@ pub extern "C-unwind" fn csharp_free_client_handle(in_client_ptr: *const c_void)
 /// ***in_callback_data*** The data to be passed in to *in_callback*.
 /// ***in_request_type*** The type of command to issue.
 /// ***in_routing_info*** Either nullptr or the routing info to use for the command.
-/// ***in_args*** A C-String array of arguments to be passed, with the size of `in_args_count` and zero terminated.
+/// ***in_args*** An array of arguments to be passed, with the size of `in_args_count`.
 /// ***in_args_count*** The number of arguments in *in_args*.
 ///
 /// # Input Safety (in_...)
@@ -276,7 +275,7 @@ pub extern "C-unwind" fn csharp_command(
     in_routing_info: *const routing::RoutingInfo,
     // ToDo: Rework into parameter struct (understand how Command.arg(...) works first)
     //       handling the different input types.
-    in_args: *const *const c_char,
+    in_args: *const Parameter,
     in_args_count: c_int,
     // ToDo: Pass in ActivityContext and connect C# OTEL with Rust OTEL
 ) -> CommandResult {
@@ -288,7 +287,9 @@ pub extern "C-unwind" fn csharp_command(
         );
         return CommandResult::new_error(helpers::to_cstr_ptr_or_null("Null handle passed"));
     }
-    let args = match helpers::grab_vec_str(in_args, in_args_count as usize) {
+    let args = match helpers::grab_vec(in_args, in_args_count as usize, |el| {
+        Ok::<CommandParameter, Utf8OrEmptyError>(unsafe { el.to_command_parameter() }?)
+    }) {
         Ok(d) => d,
         Err(e) => {
             logger_core::log_error(
@@ -349,8 +350,9 @@ pub extern "C-unwind" fn csharp_command(
         })
     };
     ffi_handle.runtime.spawn(async move {
+        let args = args;
         logger_core::log_trace("csharp_ffi", "Entered command task with");
-        let data: redis::Value = match handle.command(cmd, args, routing_info).await {
+        let data: redis::Value = match handle.command(cmd, args.as_slice(), routing_info).await {
             Ok(d) => d,
             Err(e) => {
                 logger_core::log_error(
@@ -450,6 +452,8 @@ pub extern "C-unwind" fn csharp_command(
 
 #[cfg(test)]
 mod tests {
+    #[allow(dead_code)]
     const HOST: &str = "localhost";
+    #[allow(dead_code)]
     const PORT: u16 = 49493;
 }

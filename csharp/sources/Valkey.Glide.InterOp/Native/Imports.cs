@@ -200,7 +200,7 @@ public static class Imports
         [In] nint in_callback_data,
         [In] ERequestType in_request_type,
         [In] RoutingInfo* in_routing_info,
-        [In] byte** in_args,
+        [In] Parameter.Parameter* in_args,
         [In] int in_args_count
     );
 }

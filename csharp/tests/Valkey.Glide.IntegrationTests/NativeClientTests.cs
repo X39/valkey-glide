@@ -1,6 +1,7 @@
 using Valkey.Glide.IntegrationTests.Fixtures;
 using Valkey.Glide.InterOp;
 using Valkey.Glide.InterOp.Native;
+using Valkey.Glide.InterOp.Parameter;
 using Valkey.Glide.InterOp.Routing;
 using Value = Valkey.Glide.InterOp.Value;
 
@@ -22,7 +23,7 @@ public class NativeClientTests(ValkeyAspireFixture fixture) : IClassFixture<Valk
     public async Task CanSendGetCommandAsync()
     {
         using NativeClient nativeClient = new(fixture.ConnectionRequest);
-        Value result = await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), "test");
+        Value result = await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), new StringParameter("test"));
         Assert.Equivalent(InterOp.EValueKind.None, result.Kind);
     }
 
@@ -40,7 +41,7 @@ public class NativeClientTests(ValkeyAspireFixture fixture) : IClassFixture<Valk
         Assert.InRange(argsCount, 0, int.MaxValue);
         using NativeClient nativeClient = new(fixture.ConnectionRequest);
         Value result =
-            await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), new string('0', argsCount));
+            await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), new StringParameter(new string('0', argsCount)));
         Assert.Equivalent(InterOp.EValueKind.None, result.Kind);
     }
 
@@ -58,7 +59,7 @@ public class NativeClientTests(ValkeyAspireFixture fixture) : IClassFixture<Valk
         Assert.InRange(argsCount, 2, int.MaxValue);
         using NativeClient nativeClient = new(fixture.ConnectionRequest);
         Value result = await nativeClient.SendCommandAsync(ERequestType.Set, new NoRouting(),
-            new string('0', argsCount), string.Concat("\"", new string('0', argsCount - 2), "\""));
+            new StringParameter(new string('0', argsCount)), new StringParameter(string.Concat("\"", new string('0', argsCount - 2), "\"")));
         Assert.Equivalent(InterOp.EValueKind.Okay, result.Kind);
     }
 
@@ -68,7 +69,7 @@ public class NativeClientTests(ValkeyAspireFixture fixture) : IClassFixture<Valk
         using NativeClient nativeClient = new(fixture.ConnectionRequest);
         await Parallel.ForAsync(0, 1000,
             new ParallelOptions {MaxDegreeOfParallelism = 1000, TaskScheduler = TaskScheduler.Default,}, async (_, _) =>
-                await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), "test")
+                await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), new StringParameter("test"))
                     .ConfigureAwait(false));
     }
 
