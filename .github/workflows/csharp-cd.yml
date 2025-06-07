@@ -77,6 +77,9 @@ jobs:
             matrix:
                 build: ${{fromJson(needs.load-platform-matrix.outputs.PLATFORM_MATRIX)}}
         steps:
+            -   name: Install xmllint
+                run: sudo apt install -y libxml2-utils
+
             -   name: Setup self-hosted runner access
                 if: ${{ contains(matrix.build.languages, 'csharp') && contains(matrix.build.RUNNER, 'self-hosted') && matrix.build.TARGET != 'aarch64-unknown-linux-musl' }}
                 run: sudo chown -R $USER:$USER /home/ubuntu/actions-runner/_work/valkey-glide
@@ -161,11 +164,6 @@ jobs:
 
                     find . -type f -name "*.csproj" -print0 | while IFS= read -r -d '' csproj_file; do
                         rust_tuple=$(xmllint --xpath 'string(//Project/PropertyGroup/RustTuple)' "$csproj_file" 2>/dev/null || true)
-                        echo $(xmllint --xpath 'string(//Project/PropertyGroup/DisplayRuntimeIdentifier)' "$csproj_file" 2>/dev/null || true)
-                        echo $(xmllint --xpath 'string(//Project/PropertyGroup/RuntimeIdentifier)' "$csproj_file" 2>/dev/null || true)
-                        echo $(xmllint --xpath 'string(//Project/PropertyGroup/Platform)' "$csproj_file" 2>/dev/null || true)
-                        echo $(xmllint --xpath 'string(//Project/PropertyGroup/PlatformTarget)' "$csproj_file" 2>/dev/null || true)
-                        echo $(xmllint --xpath 'string(//Project/PropertyGroup/RustTuple)' "$csproj_file" 2>/dev/null || true)
 
                         if [[ -z "$rust_tuple" ]]; then
                             echo "Skipping: $csproj_file"
