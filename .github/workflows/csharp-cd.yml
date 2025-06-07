@@ -45,22 +45,23 @@ jobs:
     #              ec2-instance-id: ${{ secrets.AWS_EC2_INSTANCE_ID }}
 
     load-platform-matrix:
+        name: Load Platform Matrix
         runs-on: ubuntu-latest
         outputs:
-            PLATFORM_MATRIX: ${{ steps.load-platform-matrix.outputs.PLATFORM_MATRIX }}
+            PLATFORM_MATRIX: ${{ steps.load-matrix.outputs.matrix }}
         steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-            -   name: load-platform-matrix
-                id: load-platform-matrix
-                shell: bash
-                run: |
-                    # Filter entries with dotnet in PACKAGE_MANAGERS and replace "ephemeral" with "persistent" in RUNNER
-                    export PLATFORM_MATRIX=$(jq 'map(
-                        select(.PACKAGE_MANAGERS != null and (.PACKAGE_MANAGERS | contains(["dotnet"])))
-                    )' < .github/json_matrices/build-matrix.json | jq -c .)
-                    echo "PLATFORM_MATRIX=${PLATFORM_MATRIX}" >> $GITHUB_OUTPUT
+            - name: Load build matrix JSON
+              id: load-matrix
+              run: |
+                  echo "Reading .github/json_matrices/build-matrix.json..."
+                  MATRIX_JSON=$(cat .github/json_matrices/build-matrix.json | jq -c .)
+                  echo "Loaded matrix: $MATRIX_JSON"
+
+                  # Set it as step output (must be single-line JSON string)
+                  echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
     publish-assets:
         # needs: [start-self-hosted-runner, load-platform-matrix]
