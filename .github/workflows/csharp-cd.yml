@@ -143,7 +143,7 @@ jobs:
                     echo "Setting VersionPrefix=$VERSION in props/version.props"
 
                     # Replace VersionPrefix content
-                    sed -i "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$VERSION</VersionPrefix>#" props/version.props
+                    sed -i "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$VERSION</VersionPrefix>#" csharp/props/version.props
 
                     echo "Updated props/version.props:"
                     cat props/version.props
