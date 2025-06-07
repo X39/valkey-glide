@@ -57,7 +57,7 @@ jobs:
                 id: load-matrix
                 run: |
                     echo "Reading .github/json_matrices/build-matrix.json..."
-                    MATRIX_JSON=$(cat .github/json_matrices/build-matrix.json | jq -c .)
+                    MATRIX_JSON=$(jq -c '[.[] | select(.languages | index("dotnet"))]' .github/json_matrices/build-matrix.json)
                     echo "Loaded matrix: $MATRIX_JSON"
 
                     # Set it as step output (must be single-line JSON string)
@@ -129,7 +129,7 @@ jobs:
                     echo "The release version should be in the format v{major-version}.{minor-version}.{patch-version}-rc{release-candidate-number} when it a release candidate or v{major-version}.{minor-version}.{patch-version} in a stable release."
                     exit 1
 
-            -   name: Update version in props/version.props
+            -   name: Update version in csharp/props/version.props
                 run: |
                     set -euo pipefail
 
@@ -154,8 +154,8 @@ jobs:
                     sed -i '' "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$ESCAPED_VERSION</VersionPrefix>#" csharp/props/version.props
                     fi
 
-                    echo "Updated props/version.props:"
-                    cat props/version.props
+                    echo "Updated csharp/props/version.props:"
+                    cat csharp/props/version.props
 
             -   name: Set up dotnet ${{ matrix.dotnet }}
                 uses: actions/setup-dotnet@v4
