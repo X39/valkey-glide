@@ -140,10 +140,16 @@ jobs:
                     exit 1
                     fi
 
-                    echo "Setting VersionPrefix=$VERSION in props/version.props"
+                    echo "Setting VersionPrefix=$VERSION in csharp/props/version.props"
 
-                    # Replace VersionPrefix content
-                    sed -i "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$VERSION</VersionPrefix>#" csharp/props/version.props
+                    # Portable sed -i for both GNU and BSD sed:
+                    if sed --version >/dev/null 2>&1; then
+                    # GNU sed
+                    sed -i "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$ESCAPED_VERSION</VersionPrefix>#" csharp/props/version.props
+                    else
+                    # BSD sed (macOS)
+                    sed -i '' "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$ESCAPED_VERSION</VersionPrefix>#" csharp/props/version.props
+                    fi
 
                     echo "Updated props/version.props:"
                     cat props/version.props
