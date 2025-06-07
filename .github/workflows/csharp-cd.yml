@@ -142,6 +142,9 @@ jobs:
 
                     echo "Setting VersionPrefix=$VERSION in csharp/props/version.props"
 
+                    # Use safe escaping for VERSION (handles dots, +, etc.)
+                    ESCAPED_VERSION=$(printf '%s\n' "$VERSION" | sed 's/[&/\]/\\&/g')
+
                     # Portable sed -i for both GNU and BSD sed:
                     if sed --version >/dev/null 2>&1; then
                     # GNU sed
