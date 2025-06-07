@@ -82,30 +82,6 @@ jobs:
                     echo "Job running with the following matrix configuration:"
                     echo "${{ toJson(matrix) }}"
 
-            -   name: Setup self-hosted runner access
-                if: ${{ contains(matrix.build.languages, 'csharp') && contains(matrix.build.RUNNER, 'self-hosted') && matrix.build.TARGET != 'aarch64-unknown-linux-musl' }}
-                run: sudo chown -R $USER:$USER /home/ubuntu/actions-runner/_work/valkey-glide
-
-            # For MUSL on X64 we need to install git since we use the checkout action
-            -   name: Install git for musl
-                if: ${{ contains(matrix.build.TARGET, 'x86_64-unknown-linux-musl')}}
-                run: |
-                    apk update
-                    apk add git
-
-            -   name: Checkout
-                if: ${{ matrix.build.TARGET != 'aarch64-unknown-linux-musl' }}
-                uses: actions/checkout@v4
-                with:
-                    submodules: "true"
-                    fetch-depth: 0
-
-            -   name: Setup for musl
-                if: ${{ contains(matrix.build.TARGET, 'musl')}}
-                uses: ./.github/workflows/setup-musl-on-linux
-                with:
-                    arch: ${{ matrix.build.ARCH }}
-
             -   name: Set the release version
                 shell: bash
                 run: |
@@ -131,13 +107,11 @@ jobs:
 
             -   name: Update version in csharp/props/version.props
                 run: |
-                    set -euo pipefail
-
                     VERSION="${RELEASE_VERSION:-}"
 
                     if [[ -z "$VERSION" ]]; then
-                    echo "::error::RELEASE_VERSION environment variable not set"
-                    exit 1
+                        echo "::error::RELEASE_VERSION environment variable not set"
+                        exit 1
                     fi
 
                     echo "Setting VersionPrefix=$VERSION in csharp/props/version.props"
@@ -147,15 +121,73 @@ jobs:
 
                     # Portable sed -i for both GNU and BSD sed:
                     if sed --version >/dev/null 2>&1; then
-                    # GNU sed
-                    sed -i "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$ESCAPED_VERSION</VersionPrefix>#" csharp/props/version.props
+                        # GNU sed
+                        sed -i "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$ESCAPED_VERSION</VersionPrefix>#" csharp/props/version.props
                     else
-                    # BSD sed (macOS)
-                    sed -i '' "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$ESCAPED_VERSION</VersionPrefix>#" csharp/props/version.props
+                        # BSD sed (macOS)
+                        sed -i '' "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$ESCAPED_VERSION</VersionPrefix>#" csharp/props/version.props
                     fi
 
                     echo "Updated csharp/props/version.props:"
                     cat csharp/props/version.props
+
+            -   name: Select project
+                shell: bash
+                run: |
+                    set -euo pipefail
+
+                    TARGET="${{ matrix.build.TARGET }}"
+                    echo "Searching for TARGET=$TARGET"
+
+                    found=0
+
+                    find . -type f -name "*.csproj" -print0 | while IFS= read -r -d '' csproj_file; do
+                        rust_tuple=$(xmllint --xpath 'string(//Project/PropertyGroup/RustTuple)' "$csproj_file" 2>/dev/null || true)
+
+                        if [[ -z "rust_tuple" ]]; then
+                            echo "Skipping: $csproj_file"
+                            continue
+                        fi
+
+                        echo "Checking $csproj_file : RustTuple=rust_tuple"
+
+                        if [[ "rust_tuple" == "$TARGET" ]]; then
+                            echo "Match found: $csproj_file"
+
+                            echo "DOTNET_PROJECT_PATH=$csproj_file" >> "$GITHUB_ENV"
+                            found=1
+                            break
+                        fi
+                    done
+
+                    if [[ "$found" -eq 0 ]]; then
+                        echo "No matching project found for TARGET=$TARGET"
+                        exit 1
+                    fi
+
+            -   name: Setup self-hosted runner access
+                if: ${{ contains(matrix.build.languages, 'csharp') && contains(matrix.build.RUNNER, 'self-hosted') && matrix.build.TARGET != 'aarch64-unknown-linux-musl' }}
+                run: sudo chown -R $USER:$USER /home/ubuntu/actions-runner/_work/valkey-glide
+
+            # For MUSL on X64 we need to install git since we use the checkout action
+            -   name: Install git for musl
+                if: ${{ contains(matrix.build.TARGET, 'x86_64-unknown-linux-musl')}}
+                run: |
+                    apk update
+                    apk add git
+
+            -   name: Checkout
+                if: ${{ matrix.build.TARGET != 'aarch64-unknown-linux-musl' }}
+                uses: actions/checkout@v4
+                with:
+                    submodules: "true"
+                    fetch-depth: 0
+
+            -   name: Setup for musl
+                if: ${{ contains(matrix.build.TARGET, 'musl')}}
+                uses: ./.github/workflows/setup-musl-on-linux
+                with:
+                    arch: ${{ matrix.build.ARCH }}
 
             -   name: Set up dotnet ${{ matrix.dotnet }}
                 uses: actions/setup-dotnet@v4
@@ -172,39 +204,6 @@ jobs:
                 with:
                     folder_path: "${{ github.workspace }}/csharp/rust/.cargo"
                     named_os: ${{ matrix.build.NAMED_OS }}
-
-            -   name: Select project
-                shell: bash
-                run: |
-                    set -euo pipefail
-
-                    TARGET="${{ matrix.build.TARGET }}"
-                    echo "Searching for TARGET=$TARGET"
-
-                    found=0
-
-                    find . -type f -name "*.csproj" -print0 | while IFS= read -r -d '' csproj_file; do
-                        runtime_identifier=$(xmllint --xpath 'string(//Project/PropertyGroup/RustTuple)' "$csproj_file" 2>/dev/null || true)
-
-                        if [[ -z "$runtime_identifier" ]]; then
-                            continue
-                        fi
-
-                        echo "Checking $csproj_file : RustTuple=$runtime_identifier"
-
-                        if [[ "$runtime_identifier" == "$TARGET" ]]; then
-                            echo "Match found: $csproj_file"
-
-                            echo "DOTNET_PROJECT_PATH=$csproj_file" >> "$GITHUB_ENV"
-                            found=1
-                            break
-                        fi
-                    done
-
-                    if [[ "$found" -eq 0 ]]; then
-                        echo "No matching project found for TARGET=$TARGET"
-                        exit 1
-                    fi
 
 
             -   name: Install shared software dependencies
