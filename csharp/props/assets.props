@@ -20,7 +20,7 @@
     </PropertyGroup>
 
 
-    <Target Name="PreClean" BeforeTargets="Clean">
+    <Target Name="PreClean" BeforeTargets="Clean" Condition="$(VALKEY_SKIP_BUILD_ASSETS) == ''">
         <Exec Command="cargo clean --target $(RustTuple)"
               EnvironmentVariables="CARGO_TERM_COLOR=always"
               ConsoleToMsBuild="true"
@@ -30,7 +30,7 @@
         </Exec>
     </Target>
 
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="$(VALKEY_SKIP_BUILD_ASSETS) == ''">
         <Exec Command="echo $(Configuration)" ConsoleToMsBuild="true"/>
         <Exec Condition="'$(Configuration)' == 'Debug'"
               Command="cargo build --target $(RustTuple)"
@@ -48,7 +48,7 @@
         </Exec>
     </Target>
 
-    <ItemGroup>
+    <ItemGroup Condition="$(VALKEY_SKIP_BUILD_ASSETS) == ''">
         <!-- Debug -->
         <None Condition="'$(Configuration)' == 'Debug' And '$(OS)' == 'Windows_NT'"
               Include="$(RustDir)target/$(RustTuple)/debug/glide_rs.dll"

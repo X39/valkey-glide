@@ -1,0 +1,294 @@
+name: C# - Continuous Deployment
+
+on:
+    pull_request:
+        paths:
+            - .github/workflows/csharp-cd.yml
+            - .github/workflows/start-self-hosted-runner/action.yml
+            - .github/workflows/install-rust-and-protoc/action.yml
+            - .github/workflows/install-shared-dependencies/action.yml
+            - .github/workflows/install-engine/action.yml
+            - .github/json_matrices/**
+            - .github/workflows/create-test-matrices/action.yml
+    push:
+        tags:
+            - "v*.*"
+    workflow_dispatch:
+        inputs:
+            version:
+                description: "The release version of GLIDE, formatted as *.*.* or *.*.*-rc*"
+                required: true
+            publish:
+                description: "Publish"
+                required: true
+                type: boolean
+                default: false
+
+permissions:
+    id-token: write
+
+jobs:
+    #start-self-hosted-runner:
+    #    if: github.repository_owner == 'valkey-io'
+    #    runs-on: ubuntu-latest
+    #    environment: AWS_ACTIONS
+    #    steps:
+    #        - name: Checkout
+    #          uses: actions/checkout@v4
+    #          with:
+    #              fetch-depth: 0
+    #        - name: Start self hosted EC2 runner
+    #          uses: ./.github/workflows/start-self-hosted-runner
+    #          with:
+    #              role-to-assume: ${{ secrets.ROLE_TO_ASSUME }}
+    #              aws-region: ${{ secrets.AWS_REGION }}
+    #              ec2-instance-id: ${{ secrets.AWS_EC2_INSTANCE_ID }}
+
+    load-platform-matrix:
+        runs-on: ubuntu-latest
+        outputs:
+            PLATFORM_MATRIX: ${{ steps.load-platform-matrix.outputs.PLATFORM_MATRIX }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+
+            -   name: load-platform-matrix
+                id: load-platform-matrix
+                shell: bash
+                run: |
+                    # Filter entries with dotnet in PACKAGE_MANAGERS and replace "ephemeral" with "persistent" in RUNNER
+                    export PLATFORM_MATRIX=$(jq 'map(
+                        select(.PACKAGE_MANAGERS != null and (.PACKAGE_MANAGERS | contains(["dotnet"])))
+                    )' < .github/json_matrices/build-matrix.json | jq -c .)
+                    echo "PLATFORM_MATRIX=${PLATFORM_MATRIX}" >> $GITHUB_OUTPUT
+
+    publish-assets:
+        # needs: [start-self-hosted-runner, load-platform-matrix]
+        needs: [ load-platform-matrix ]
+        # if: github.repository_owner == 'valkey-io'
+        name: Publish assets to NuGet
+        runs-on: ${{ matrix.build.RUNNER }}
+        container:
+            image: ${{ matrix.build.IMAGE || '' }}
+            options: ${{ matrix.build.CONTAINER_OPTIONS || 'none'}}
+        strategy:
+            fail-fast: false
+            matrix:
+                build: ${{fromJson(needs.load-platform-matrix.outputs.PLATFORM_MATRIX)}}
+        steps:
+            -   name: Output Matrix Parameters for this job
+                run: |
+                    echo "Job running with the following matrix configuration:"
+                    echo "${{ toJson(matrix) }}"
+
+            -   name: Setup self-hosted runner access
+                if: ${{ contains(matrix.build.languages, 'csharp') && contains(matrix.build.RUNNER, 'self-hosted') && matrix.build.TARGET != 'aarch64-unknown-linux-musl' }}
+                run: sudo chown -R $USER:$USER /home/ubuntu/actions-runner/_work/valkey-glide
+
+            # For MUSL on X64 we need to install git since we use the checkout action
+            -   name: Install git for musl
+                if: ${{ contains(matrix.build.TARGET, 'x86_64-unknown-linux-musl')}}
+                run: |
+                    apk update
+                    apk add git
+
+            -   name: Checkout
+                if: ${{ matrix.build.TARGET != 'aarch64-unknown-linux-musl' }}
+                uses: actions/checkout@v4
+                with:
+                    submodules: "true"
+                    fetch-depth: 0
+
+            -   name: Setup for musl
+                if: ${{ contains(matrix.build.TARGET, 'musl')}}
+                uses: ./.github/workflows/setup-musl-on-linux
+                with:
+                    arch: ${{ matrix.build.ARCH }}
+
+            -   name: Set the release version
+                shell: bash
+                run: |
+                    if ${{ env.EVENT_NAME == 'pull_request' }}; then
+                      R_VERSION="255.255.255"
+                    elif ${{ env.EVENT_NAME == 'workflow_dispatch' }}; then
+                      echo "${{env.EVENT_NAME}}"
+                      R_VERSION="${{ env.INPUT_VERSION }}"
+                    else
+                      R_VERSION=${GITHUB_REF:11}
+                    fi
+                    echo "RELEASE_VERSION=${R_VERSION}" >> $GITHUB_ENV
+                env:
+                    EVENT_NAME: ${{ github.event_name }}
+                    INPUT_VERSION: ${{ github.event.inputs.version }}
+
+            -   name: Check that the release version dont have typo init
+                if: ${{ github.event_name != 'pull_request' && contains(env.RELEASE_VERSION, '-') && !contains(env.RELEASE_VERSION, 'rc') }}
+                run: |
+                    echo "The release version "${RELEASE_VERSION}" contains a typo, please fix it"
+                    echo "The release version should be in the format v{major-version}.{minor-version}.{patch-version}-rc{release-candidate-number} when it a release candidate or v{major-version}.{minor-version}.{patch-version} in a stable release."
+                    exit 1
+
+            -   name: Update version in props/version.props
+                run: |
+                    set -euo pipefail
+
+                    VERSION="${RELEASE_VERSION:-}"
+
+                    if [[ -z "$VERSION" ]]; then
+                      echo "::error::RELEASE_VERSION environment variable not set"
+                      exit 1
+                    fi
+
+                    echo "Setting VersionPrefix=$VERSION in props/version.props"
+
+                    # Use xmllint to verify the file is valid XML (optional sanity check)
+                    xmllint --noout props/version.props
+
+                    # Use sed to replace VersionPrefix content
+                    sed -i "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$VERSION</VersionPrefix>#" props/version.props
+
+                    echo "Updated props/version.props:"
+                    cat props/version.props
+
+            -   name: Set up dotnet ${{ matrix.dotnet }}
+                uses: actions/setup-dotnet@v4
+                with:
+                    # install latest dotnet too to use language features
+                    dotnet-version: |
+                        9
+                        ${{ matrix.dotnet }}
+                env:
+                    DOTNET_INSTALL_DIR: ~/.dotnet
+
+            -   name: Update package version in config.toml
+                uses: ./.github/workflows/update-glide-version
+                with:
+                    folder_path: "${{ github.workspace }}/csharp/rust/.cargo"
+                    named_os: ${{ matrix.build.NAMED_OS }}
+
+            -   name: Select project
+                shell: bash
+                run: |
+                    set -euo pipefail
+
+                    TARGET="${{ matrix.build.TARGET }}"
+                    echo "Searching for TARGET=$TARGET"
+
+                    found=0
+
+                    find . -type f -name "*.csproj" -print0 | while IFS= read -r -d '' csproj_file; do
+                    runtime_identifier=$(xmllint --xpath 'string(//Project/PropertyGroup/RuntimeIdentifier)' "$csproj_file" 2>/dev/null || true)
+
+                    if [[ -z "$runtime_identifier" ]]; then
+                    continue
+                    fi
+
+                    echo "Checking $csproj_file : RuntimeIdentifier=$runtime_identifier"
+
+                    if [[ "$runtime_identifier" == "$TARGET" ]]; then
+                    echo "Match found: $csproj_file"
+
+                    echo "DOTNET_PROJECT_PATH=$csproj_file" >> "$GITHUB_ENV"
+                    found=1
+                    break
+                    fi
+                    done
+
+                    if [[ "$found" -eq 0 ]]; then
+                    echo "No matching project found for TARGET=$TARGET"
+                    exit 1
+                    fi
+
+            -   name: Install shared software dependencies
+                uses: ./.github/workflows/install-shared-dependencies
+                with:
+                    os: ${{ matrix.host.OS }}
+                    target: ${{ matrix.host.TARGET }}
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
+                    engine-version: ${{ matrix.engine.version }}
+
+            -   uses: actions/cache@v4
+                with:
+                    path: csharp/rust/target
+                    key: ${{ matrix.host.TARGET }}-csharp
+                    restore-keys: |
+                        ${{ matrix.host.TARGET }}-glide-core
+                        ${{ matrix.host.TARGET }}
+
+            -   name: Setup NuGet.exe for use with actions
+                uses: NuGet/setup-nuget@v1.0.5
+                with:
+                    nuget-version: latest
+
+            -   name: Restore dependencies
+                run: dotnet restore $DOTNET_PROJECT_PATH
+
+            -   name: Build
+                run: dotnet build --no-restore $DOTNET_PROJECT_PATH
+
+            -   name: Pack
+                run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
+                # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
+
+            - name: Upload .nupkg as workflow artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: nupkg-artifacts
+                  path: '**/*.nupkg'
+                  if-no-files-found: error
+
+            -   name: Upload package to NuGet
+                if: ${{ github.event_name == 'push' || inputs.publish == true }}
+                run: dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+
+
+    publish-dotnet-projects-nuget:
+        name: Publish normal packages to NuGet
+        needs: publish-assets
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    submodules: "true"
+
+            -   name: Set up dotnet ${{ matrix.dotnet }}
+                uses: actions/setup-dotnet@v4
+                with:
+                    # install latest dotnet too to use language features
+                    dotnet-version: |
+                        9
+                        ${{ matrix.dotnet }}
+
+            -   name: Setup NuGet.exe for use with actions
+                uses: NuGet/setup-nuget@v1.0.5
+                with:
+                    nuget-version: latest
+
+            -   name: Write `VALKEY_SKIP_BUILD_ASSETS` variable
+                run: echo "VALKEY_SKIP_BUILD_ASSETS=TRUE" >> $GITHUB_ENV
+
+            -   name: Restore dependencies
+                run: dotnet restore
+
+            -   name: Build
+                run: dotnet build --no-restore
+
+            -   name: Pack
+                if: ${{ github.event_name == 'push' || inputs.publish == true }}
+                run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
+                # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
+
+            - name: Upload .nupkg as workflow artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: nupkg-and-snupkg-artifacts
+                path: |
+                    **/*.nupkg
+                    **/*.snupkg
+                if-no-files-found: error
+
+            -   name: Upload package to NuGet
+                run: |
+                    dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+                    dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
