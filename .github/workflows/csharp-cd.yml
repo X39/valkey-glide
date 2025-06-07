@@ -50,18 +50,18 @@ jobs:
         outputs:
             PLATFORM_MATRIX: ${{ steps.load-matrix.outputs.matrix }}
         steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+            -   name: Checkout code
+                uses: actions/checkout@v4
 
-            - name: Load build matrix JSON
-              id: load-matrix
-              run: |
-                  echo "Reading .github/json_matrices/build-matrix.json..."
-                  MATRIX_JSON=$(cat .github/json_matrices/build-matrix.json | jq -c .)
-                  echo "Loaded matrix: $MATRIX_JSON"
+            -   name: Load build matrix JSON
+                id: load-matrix
+                run: |
+                    echo "Reading .github/json_matrices/build-matrix.json..."
+                    MATRIX_JSON=$(cat .github/json_matrices/build-matrix.json | jq -c .)
+                    echo "Loaded matrix: $MATRIX_JSON"
 
-                  # Set it as step output (must be single-line JSON string)
-                  echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+                    # Set it as step output (must be single-line JSON string)
+                    echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
     publish-assets:
         # needs: [start-self-hosted-runner, load-platform-matrix]
@@ -136,16 +136,13 @@ jobs:
                     VERSION="${RELEASE_VERSION:-}"
 
                     if [[ -z "$VERSION" ]]; then
-                      echo "::error::RELEASE_VERSION environment variable not set"
-                      exit 1
+                    echo "::error::RELEASE_VERSION environment variable not set"
+                    exit 1
                     fi
 
                     echo "Setting VersionPrefix=$VERSION in props/version.props"
 
-                    # Use xmllint to verify the file is valid XML (optional sanity check)
-                    xmllint --noout props/version.props
-
-                    # Use sed to replace VersionPrefix content
+                    # Replace VersionPrefix content
                     sed -i "s#<VersionPrefix>.*</VersionPrefix>#<VersionPrefix>$VERSION</VersionPrefix>#" props/version.props
 
                     echo "Updated props/version.props:"
@@ -231,12 +228,12 @@ jobs:
                 run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            - name: Upload .nupkg as workflow artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: nupkg-artifacts
-                  path: '**/*.nupkg'
-                  if-no-files-found: error
+            -   name: Upload .nupkg as workflow artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: nupkg-artifacts
+                    path: '**/*.nupkg'
+                    if-no-files-found: error
 
             -   name: Upload package to NuGet
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
@@ -280,14 +277,14 @@ jobs:
                 run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            - name: Upload .nupkg as workflow artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: nupkg-and-snupkg-artifacts
-                path: |
-                    **/*.nupkg
-                    **/*.snupkg
-                if-no-files-found: error
+            -   name: Upload .nupkg as workflow artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: nupkg-and-snupkg-artifacts
+                    path: |
+                        **/*.nupkg
+                        **/*.snupkg
+                    if-no-files-found: error
 
             -   name: Upload package to NuGet
                 run: |
