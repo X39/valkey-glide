@@ -163,8 +163,8 @@ jobs:
 
                     found=0
 
-                    while IFS= read -r -d '' csproj_file; do
-                        rust_tuple=$(xmllint --xpath 'string(//Project/PropertyGroup/RustTuple)' "$csproj_file" 2>/dev/null || true)
+                    while IFS= read -r csproj_file; do
+                        rust_tuple=$(cat "$csproj_file" | grep -o '<RustTuple>[^<]*</RustTuple>' | sed 's/<[^>]*>//g' || true)
 
                         if [[ -z "$rust_tuple" ]]; then
                             echo "Skipping: $csproj_file"
@@ -175,12 +175,11 @@ jobs:
 
                         if [[ "$rust_tuple" == "$TARGET" ]]; then
                             echo "Match found: $csproj_file"
-
                             echo "DOTNET_PROJECT_PATH=$csproj_file" >> "$GITHUB_ENV"
                             found=1
                             break
                         fi
-                    done < <(find . -type f -name "*.csproj" -print0)
+                    done < <(find . -type f -name "*.csproj")
 
                     if [[ "$found" -eq 0 ]]; then
                         echo "No matching project found for TARGET=$TARGET"
