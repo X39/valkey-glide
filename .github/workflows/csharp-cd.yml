@@ -304,9 +304,9 @@ jobs:
                     fi
 
             -   name: Upload artifacts
-                uses: actions/upload-artifact/merge@v4
+                uses: actions/upload-artifact@v4
                 with:
-                    name: nuget-packages
+                    name: NuGet assets - ${{ matrix.build.TARGET }}
                     path: |
                         csharp/**/*.nupkg
                         csharp/**/*.snupkg
@@ -394,9 +394,9 @@ jobs:
                     fi
 
             -   name: Upload artifacts
-                uses: actions/upload-artifact/merge@v4
+                uses: actions/upload-artifact@v4
                 with:
-                    name: nuget-packages
+                    name: NuGet Packages - ${{ matrix.build.TARGET }}
                     path: |
                         csharp/**/*.nupkg
                         csharp/**/*.snupkg
