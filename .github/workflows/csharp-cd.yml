@@ -83,7 +83,7 @@ jobs:
                     echo "${{ toJson(matrix) }}"
 
             -   name: Install xmllint
-                if: ${{ matrix.build.TARGET != 'aarch64-apple-darwin' && matrix.build.TARGET != 'x86_64-unknown-linux-musl' && matrix.build.TARGET != 'x86_64-pc-windows-msvc'}}
+                if: ${{ matrix.build.TARGET != 'aarch64-apple-darwin' && matrix.build.TARGET != 'x86_64-unknown-linux-musl'}}
                 run: sudo apt install -y libxml2-utils
 
             -   name: Setup self-hosted runner access
@@ -163,44 +163,24 @@ jobs:
 
                     found=0
 
-                    if [[ "$TARGET" == "x86_64-pc-windows-msvc" ]]; then
-                        # Windows-specific handling
-                        while IFS= read -r csproj_file; do
-                            rust_tuple=$(cat "$csproj_file" | grep -o '<RustTuple>[^<]*</RustTuple>' | sed 's/<[^>]*>//g' || true)
+                    while IFS= read -r -d '' csproj_file; do
+                        rust_tuple=$(xmllint --xpath 'string(//Project/PropertyGroup/RustTuple)' "$csproj_file" 2>/dev/null || true)
 
-                            if [[ -z "$rust_tuple" ]]; then
-                                echo "Skipping: $csproj_file"
-                                continue
-                            fi
+                        if [[ -z "$rust_tuple" ]]; then
+                            echo "Skipping: $csproj_file"
+                            continue
+                        fi
 
-                            echo "Checking $csproj_file : RustTuple=$rust_tuple"
+                        echo "Checking $csproj_file : RustTuple=$rust_tuple"
 
-                            if [[ "$rust_tuple" == "$TARGET" ]]; then
-                                echo "Match found: $csproj_file"
-                                echo "DOTNET_PROJECT_PATH=$csproj_file" >> "$GITHUB_ENV"
-                                found=1
-                                break
-                            fi
-                        done < <(find . -type f -name "*.csproj")
-                    else
-                        while IFS= read -r -d '' csproj_file; do
-                            rust_tuple=$(xmllint --xpath 'string(//Project/PropertyGroup/RustTuple)' "$csproj_file" 2>/dev/null || true)
+                        if [[ "$rust_tuple" == "$TARGET" ]]; then
+                            echo "Match found: $csproj_file"
 
-                            if [[ -z "$rust_tuple" ]]; then
-                                echo "Skipping: $csproj_file"
-                                continue
-                            fi
-
-                            echo "Checking $csproj_file : RustTuple=$rust_tuple"
-
-                            if [[ "$rust_tuple" == "$TARGET" ]]; then
-                                echo "Match found: $csproj_file"
-                                echo "DOTNET_PROJECT_PATH=$csproj_file" >> "$GITHUB_ENV"
-                                found=1
-                                break
-                            fi
-                        done < <(find . -type f -name "*.csproj" -print0)
-                    fi
+                            echo "DOTNET_PROJECT_PATH=$csproj_file" >> "$GITHUB_ENV"
+                            found=1
+                            break
+                        fi
+                    done < <(find . -type f -name "*.csproj" -print0)
 
                     if [[ "$found" -eq 0 ]]; then
                         echo "No matching project found for TARGET=$TARGET"
@@ -226,7 +206,7 @@ jobs:
             -   name: Update package version in config.toml
                 uses: ./.github/workflows/update-glide-version
                 with:
-                    folder_path: "${{ matrix.build.TARGET == 'x86_64-pc-windows-msvc' && format('{0}\csharp\rust\.cargo', github.workspace) || format('{0}/csharp/rust/.cargo', github.workspace) }}"
+                    folder_path: "${{ github.workspace }}/csharp/rust/.cargo"
                     named_os: ${{ matrix.build.NAMED_OS }}
 
 
