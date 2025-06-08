@@ -231,13 +231,16 @@ jobs:
                     nuget-version: latest
 
             -   name: Restore dependencies
+                working-directory: csharp
                 run: dotnet restore $DOTNET_PROJECT_PATH
 
             -   name: Build
+                working-directory: csharp
                 run: dotnet build --no-restore $DOTNET_PROJECT_PATH
 
             -   name: Pack
-                run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
+                working-directory: csharp
+                run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
             -   name: Upload .nupkg as workflow artifact
@@ -248,6 +251,7 @@ jobs:
                     if-no-files-found: error
 
             -   name: Upload package to NuGet
+                working-directory: csharp
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
                 run: dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
 
@@ -275,16 +279,25 @@ jobs:
                 with:
                     nuget-version: latest
 
+            - uses: actions/cache@v4
+              with:
+                  path: csharp/rust/target
+                  key: ${{ matrix.host.IMAGE }}-csharp
+                  restore-keys: ${{ matrix.host.IMAGE }}
+
             -   name: Write `VALKEY_SKIP_BUILD_ASSETS` variable
                 run: echo "VALKEY_SKIP_BUILD_ASSETS=TRUE" >> $GITHUB_ENV
 
             -   name: Restore dependencies
+                working-directory: csharp
                 run: dotnet restore
 
             -   name: Build
+                working-directory: csharp
                 run: dotnet build --no-restore
 
             -   name: Pack
+                working-directory: csharp
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
                 run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
@@ -299,6 +312,7 @@ jobs:
                     if-no-files-found: error
 
             -   name: Upload package to NuGet
+                working-directory: csharp
                 run: |
                     dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
                     dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
