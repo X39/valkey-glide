@@ -285,6 +285,14 @@ jobs:
                       echo "files=$json_array" >> "$GITHUB_OUTPUT"
                     fi
 
+            -   name: Upload artifacts
+                uses: actions/upload-artifact@v3
+                with:
+                    name: nuget-packages
+                    path: |
+                        csharp/**/*.nupkg
+                        csharp/**/*.snupkg
+
             -   name: Upload packages to NuGet
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
                 run: |
@@ -360,6 +368,14 @@ jobs:
                       json_array="[$(IFS=,; echo "${json_objects[*]}")]"
                       echo "files=$json_array" >> "$GITHUB_OUTPUT"
                     fi
+
+            -   name: Upload artifacts
+                uses: actions/upload-artifact@v3
+                with:
+                    name: nuget-packages
+                    path: |
+                        csharp/**/*.nupkg
+                        csharp/**/*.snupkg
 
             -   name: Upload packages to NuGet
                 working-directory: csharp
