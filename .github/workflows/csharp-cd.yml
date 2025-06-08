@@ -76,8 +76,6 @@ jobs:
             fail-fast: false
             matrix:
                 build: ${{fromJson(needs.load-platform-matrix.outputs.PLATFORM_MATRIX)}}
-        outputs:
-            FILES_MATRIX: ${{ steps.set-artifact-matrix.outputs.files }}
         steps:
             -   name: Install xmllint
                 run: sudo apt install -y libxml2-utils
@@ -124,8 +122,8 @@ jobs:
             -   name: Check that the release version dont have typo init
                 if: ${{ github.event_name != 'pull_request' && contains(env.RELEASE_VERSION, '-') && !contains(env.RELEASE_VERSION, 'rc') }}
                 run: |
-                    echo "The release version \"${RELEASE_VERSION}\" contains a typo, please fix it"
-                    echo "The release version should be in the format v{major}.{minor}.{patch}-rc{release-candidate} or v{major}.{minor}.{patch}."
+                    echo "The release version "${RELEASE_VERSION}" contains a typo, please fix it"
+                    echo "The release version should be in the format v{major-version}.{minor-version}.{patch-version}-rc{release-candidate-number} when it a release candidate or v{major-version}.{minor-version}.{patch-version} in a stable release."
                     exit 1
 
             -   name: Update version in csharp/props/version.props
@@ -245,34 +243,18 @@ jobs:
                 run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            -   name: Prepare file matrix for upload
-                id: set-artifact-matrix
-                run: |
-                    files=$(find . -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | xargs -0 -n1 echo | jq -R . | jq -cs .)
-                    echo "files=$files" >> $GITHUB_OUTPUT
+            -   name: Upload .nupkg as workflow artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: nupkg-artifacts
+                    path: '**/*.nupkg'
+                    if-no-files-found: error
 
             -   name: Upload package to NuGet
                 working-directory: csharp
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
-                run: |
-                    dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+                run: dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
 
-    upload-individual-artifacts:
-        name: Upload individual .nupkg and .snupkg artifacts
-        needs: publish-assets
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                file: ${{ fromJson(needs.publish-assets.outputs.FILES_MATRIX) }}
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-
-            -   name: Upload ${{ matrix.file }}
-                uses: actions/upload-artifact@v4
-                with:
-                    name: ${{ basename(matrix.file) }}
-                    path: ${{ matrix.file }}
 
     publish-dotnet-projects-nuget:
         name: Publish normal packages to NuGet
@@ -297,11 +279,11 @@ jobs:
                 with:
                     nuget-version: latest
 
-            -   uses: actions/cache@v4
-                with:
-                    path: csharp/rust/target
-                    key: ${{ matrix.host.IMAGE }}-csharp
-                    restore-keys: ${{ matrix.host.IMAGE }}
+            - uses: actions/cache@v4
+              with:
+                  path: csharp/rust/target
+                  key: ${{ matrix.host.IMAGE }}-csharp
+                  restore-keys: ${{ matrix.host.IMAGE }}
 
             -   name: Write `VALKEY_SKIP_BUILD_ASSETS` variable
                 run: echo "VALKEY_SKIP_BUILD_ASSETS=TRUE" >> $GITHUB_ENV
@@ -320,33 +302,17 @@ jobs:
                 run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            -   name: Prepare file matrix for upload
-                id: set-artifact-matrix
-                run: |
-                    files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | xargs -0 -n1 echo | jq -R . | jq -cs .)
-                    echo "files=$files" >> $GITHUB_OUTPUT
-
-        outputs:
-            FILES_MATRIX: ${{ steps.set-artifact-matrix.outputs.files }}
-
-    upload-dotnet-projects-artifacts:
-        name: Upload individual dotnet project artifacts
-        needs: publish-dotnet-projects-nuget
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                file: ${{ fromJson(needs.publish-dotnet-projects-nuget.outputs.FILES_MATRIX) }}
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-
-            -   name: Upload ${{ matrix.file }}
+            -   name: Upload .nupkg as workflow artifact
                 uses: actions/upload-artifact@v4
                 with:
-                    name: ${{ basename(matrix.file) }}
-                    path: ${{ matrix.file }}
+                    name: nupkg-and-snupkg-artifacts
+                    path: |
+                        **/*.nupkg
+                        **/*.snupkg
+                    if-no-files-found: error
 
             -   name: Upload package to NuGet
-                if: ${{ github.event_name == 'push' || inputs.publish == true }}
+                working-directory: csharp
                 run: |
-                    dotnet nuget push "${{ matrix.file }}" -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+                    dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+                    dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
