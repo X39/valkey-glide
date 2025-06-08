@@ -248,13 +248,13 @@ jobs:
                     nuget-version: latest
 
             -   name: Restore dependencies
-                run: dotnet restore $DOTNET_PROJECT_PATH
+                run: dotnet restore "$DOTNET_PROJECT_PATH"
 
             -   name: Build
-                run: dotnet build --no-restore --configuration Release $DOTNET_PROJECT_PATH
+                run: dotnet build --no-restore --configuration Release "$DOTNET_PROJECT_PATH"
 
             -   name: Pack
-                run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
+                run: dotnet pack --no-build --configuration Release "$DOTNET_PROJECT_PATH"
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
             -   name: Prepare file matrix for upload
