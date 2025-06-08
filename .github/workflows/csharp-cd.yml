@@ -248,7 +248,10 @@ jobs:
             -   name: Prepare file matrix for upload
                 id: set-artifact-matrix
                 run: |
-                    files=$(find . -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | xargs -0 -n1 echo | jq -R . | jq -cs .)
+                    files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | while IFS= read -r -d '' file; do
+                    filename=$(basename "$file")
+                    jq -n --arg file "$file" --arg filename "$filename" '{file: $file, filename: $filename}'
+                    done | jq -s .)
                     echo "files=$files" >> $GITHUB_OUTPUT
 
             -   name: Upload package to NuGet
@@ -271,8 +274,8 @@ jobs:
             -   name: Upload ${{ matrix.file }}
                 uses: actions/upload-artifact@v4
                 with:
-                    name: ${{ basename(matrix.file) }}
-                    path: ${{ matrix.file }}
+                    name: ${{ matrix.artifact.filename }}
+                    path: ${{ matrix.artifact.file }}
 
     publish-dotnet-projects-nuget:
         name: Publish normal packages to NuGet
@@ -323,7 +326,10 @@ jobs:
             -   name: Prepare file matrix for upload
                 id: set-artifact-matrix
                 run: |
-                    files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | xargs -0 -n1 echo | jq -R . | jq -cs .)
+                    files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | while IFS= read -r -d '' file; do
+                    filename=$(basename "$file")
+                    jq -n --arg file "$file" --arg filename "$filename" '{file: $file, filename: $filename}'
+                    done | jq -s .)
                     echo "files=$files" >> $GITHUB_OUTPUT
 
         outputs:
@@ -343,8 +349,8 @@ jobs:
             -   name: Upload ${{ matrix.file }}
                 uses: actions/upload-artifact@v4
                 with:
-                    name: ${{ basename(matrix.file) }}
-                    path: ${{ matrix.file }}
+                    name: ${{ matrix.artifact.filename }}
+                    path: ${{ matrix.artifact.file }}
 
             -   name: Upload package to NuGet
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
