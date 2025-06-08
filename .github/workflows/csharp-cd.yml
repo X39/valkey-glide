@@ -240,11 +240,6 @@ jobs:
                 run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            -   name: \[DEBUG\] Output files
-                working-directory: csharp
-                shell: bash
-                run: find .
-
             -   name: Prepare file matrix for upload
                 id: set-artifact-matrix
                 shell: bash
@@ -281,6 +276,12 @@ jobs:
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
                 run: |
                     dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+
+            -   name: DEBUG - Output files
+                if: always()
+                working-directory: csharp
+                shell: bash
+                run: find .
 
 
     publish-dotnet-projects-nuget:
@@ -329,11 +330,6 @@ jobs:
                 run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            -   name: \[DEBUG\] Output files
-                working-directory: csharp
-                shell: bash
-                run: find .
-
             -   name: Prepare file matrix for upload
                 id: set-artifact-matrix
                 shell: bash
@@ -372,3 +368,9 @@ jobs:
                 run: |
                     dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
                     dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+
+            -   name: DEBUG - Output files
+                if: always()
+                working-directory: csharp
+                shell: bash
+                run: find .
