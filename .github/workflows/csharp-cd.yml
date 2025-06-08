@@ -123,7 +123,9 @@ jobs:
                     echo "The release version should be in the format v{major-version}.{minor-version}.{patch-version}-rc{release-candidate-number} when it a release candidate or v{major-version}.{minor-version}.{patch-version} in a stable release."
                     exit 1
 
-            -   name: Update version in csharp/props/version.props
+            -   name: Update version in csharp/props/version.props - Bash
+                shell: bash
+                if: ${{ matrix.build.TARGET != 'x86_64-pc-windows-msvc' }}
                 run: |
                     VERSION="${RELEASE_VERSION:-}"
 
@@ -148,6 +150,25 @@ jobs:
 
                     echo "Updated csharp/props/version.props:"
                     cat csharp/props/version.props
+
+            -   name: Update version in csharp/props/version.props - Powershell
+                if: ${{ matrix.build.TARGET == 'x86_64-pc-windows-msvc' }}
+                shell: pwsh
+                run: |
+                    $VERSION = $env:RELEASE_VERSION
+                    if (-not $VERSION) {
+                        Write-Error "RELEASE_VERSION environment variable not set"
+                        exit 1
+                    }
+
+                    Write-Host "Setting VersionPrefix=$VERSION in csharp/props/version.props"
+
+                    $content = Get-Content csharp/props/version.props -Raw
+                    $newContent = $content -replace '<VersionPrefix>.*</VersionPrefix>', "<VersionPrefix>$VERSION</VersionPrefix>"
+                    Set-Content -Path csharp/props/version.props -Value $newContent
+
+                    Write-Host "Updated csharp/props/version.props:"
+                    Get-Content csharp/props/version.props
 
             -   name: Select project
                 shell: bash
