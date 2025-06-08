@@ -243,17 +243,20 @@ jobs:
                 run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            -   name: Upload .nupkg as workflow artifact
-                uses: actions/upload-artifact@v4
-                with:
-                    name: nupkg-artifacts
-                    path: '**/*.nupkg'
-                    if-no-files-found: error
+            -   name: Prepare file matrix for upload
+                id: set-artifact-matrix
+                run: |
+                    files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | while IFS= read -r -d '' file; do
+                    filename=$(basename "$file")
+                    jq -n --arg file "$file" --arg filename "$filename" '{file: $file, filename: $filename}'
+                    done | jq -s .)
+                    echo "files=$files" >> $GITHUB_OUTPUT
 
-            -   name: Upload package to NuGet
+            -   name: Upload packages to NuGet
                 working-directory: csharp
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
-                run: dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+                run: |
+                    dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
 
 
     publish-dotnet-projects-nuget:
@@ -302,17 +305,18 @@ jobs:
                 run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            -   name: Upload .nupkg as workflow artifact
-                uses: actions/upload-artifact@v4
-                with:
-                    name: nupkg-and-snupkg-artifacts
-                    path: |
-                        **/*.nupkg
-                        **/*.snupkg
-                    if-no-files-found: error
+            -   name: Prepare file matrix for upload
+                id: set-artifact-matrix
+                run: |
+                    files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | while IFS= read -r -d '' file; do
+                    filename=$(basename "$file")
+                    jq -n --arg file "$file" --arg filename "$filename" '{file: $file, filename: $filename}'
+                    done | jq -s .)
+                    echo "files=$files" >> $GITHUB_OUTPUT
 
-            -   name: Upload package to NuGet
+            -   name: Upload packages to NuGet
                 working-directory: csharp
+                if: ${{ github.event_name == 'push' || inputs.publish == true }}
                 run: |
                     dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
                     dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
