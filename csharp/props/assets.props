@@ -57,6 +57,13 @@
               Pack="True">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Condition="'$(Configuration)' == 'Debug' And '$(OS)' == 'OSX'"
+              Include="$(RustDir)target/$(RustTuple)/debug/glide_rs.dylib"
+              Link="/$(RustLibPrefix)%(Filename)%(Extension)"
+              PackagePath="/runtimes/$(RuntimeIdentifier)/native/$(RustLibPrefix)%(Filename)%(Extension)"
+              Pack="True">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Condition="'$(Configuration)' == 'Debug'"
               Include="$(RustDir)target/$(RustTuple)/debug/*glide_rs.pdb"
               Link="/$(RustLibPrefix)%(Filename)%(Extension)"
@@ -64,7 +71,7 @@
               Pack="True">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Condition="'$(Configuration)' == 'Debug' And '$(OS)' != 'Windows_NT'"
+        <None Condition="'$(Configuration)' == 'Debug' And '$(OS)' != 'Windows_NT' And '$(OS)' != 'OSX'"
               Include="$(RustDir)target/$(RustTuple)/debug/libglide_rs.so"
               Link="/$(RustLibPrefix)%(Filename)%(Extension)"
               PackagePath="/runtimes/$(RuntimeIdentifier)/native/$(RustLibPrefix)%(Filename)%(Extension)"
@@ -80,6 +87,13 @@
               Pack="True">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Condition="'$(Configuration)' == 'Release' And '$(OS)' == 'OSX'"
+              Include="$(RustDir)target/$(RustTuple)/release/glide_rs.dylib"
+              Link="/$(RustLibPrefix)%(Filename)%(Extension)"
+              PackagePath="/runtimes/$(RuntimeIdentifier)/native/$(RustLibPrefix)%(Filename)%(Extension)"
+              Pack="True">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <!--
         <None Condition="'$(Configuration)' == 'Release'"
               Include="$(RustDir)target/$(RustTuple)/release/*glide_rs.pdb"
@@ -89,7 +103,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         -->
-        <None Condition="'$(Configuration)' == 'Release' And '$(OS)' != 'Windows_NT'"
+        <None Condition="'$(Configuration)' == 'Release' And '$(OS)' != 'Windows_NT' And '$(OS)' != 'OSX'"
               Include="$(RustDir)target/$(RustTuple)/release/libglide_rs.so"
               Link="/$(RustLibPrefix)%(Filename)%(Extension)"
               PackagePath="/runtimes/$(RuntimeIdentifier)/native/$(RustLibPrefix)%(Filename)%(Extension)"
