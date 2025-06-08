@@ -83,6 +83,7 @@ jobs:
                     echo "${{ toJson(matrix) }}"
 
             -   name: Install xmllint
+                if: ${{ matrix.build.TARGET != 'aarch64-apple-darwin' && matrix.build.TARGET != 'x86_64-unknown-linux-musl'}}
                 run: sudo apt install -y libxml2-utils
 
             -   name: Setup self-hosted runner access
