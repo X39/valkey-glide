@@ -162,7 +162,7 @@ jobs:
 
                     found=0
 
-                    find . -type f -name "*.csproj" -print0 | while IFS= read -r -d '' csproj_file; do
+                    while IFS= read -r -d '' csproj_file; do
                         rust_tuple=$(xmllint --xpath 'string(//Project/PropertyGroup/RustTuple)' "$csproj_file" 2>/dev/null || true)
 
                         if [[ -z "$rust_tuple" ]]; then
@@ -179,7 +179,7 @@ jobs:
                             found=1
                             break
                         fi
-                    done
+                    done < <(find . -type f -name "*.csproj" -print0)
 
                     if [[ "$found" -eq 0 ]]; then
                         echo "No matching project found for TARGET=$TARGET"
