@@ -77,6 +77,11 @@ jobs:
             matrix:
                 build: ${{fromJson(needs.load-platform-matrix.outputs.PLATFORM_MATRIX)}}
         steps:
+            -   name: Output Matrix Parameters for this job
+                run: |
+                    echo "Job running with the following matrix configuration:"
+                    echo "${{ toJson(matrix) }}"
+
             -   name: Install xmllint
                 run: sudo apt install -y libxml2-utils
 
@@ -97,11 +102,6 @@ jobs:
                 with:
                     submodules: "true"
                     fetch-depth: 0
-
-            -   name: Output Matrix Parameters for this job
-                run: |
-                    echo "Job running with the following matrix configuration:"
-                    echo "${{ toJson(matrix) }}"
 
             -   name: Set the release version
                 shell: bash
@@ -234,7 +234,7 @@ jobs:
                 run: dotnet restore $DOTNET_PROJECT_PATH
 
             -   name: Build
-                run: dotnet build --no-restore $DOTNET_PROJECT_PATH
+                run: dotnet build --no-restore --configuration Release $DOTNET_PROJECT_PATH
 
             -   name: Pack
                 run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
@@ -293,7 +293,7 @@ jobs:
 
             -   name: Build
                 working-directory: csharp
-                run: dotnet build --no-restore
+                run: dotnet build --no-restore --configuration Release
 
             -   name: Pack
                 working-directory: csharp
