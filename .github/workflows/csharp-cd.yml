@@ -248,7 +248,10 @@ jobs:
                     nuget-version: latest
 
             -   name: Restore dependencies
-                run: dotnet restore $DOTNET_PROJECT_PATH
+                run: |
+                    echo dotnet restore $DOTNET_PROJECT_PATH
+                    pwd
+                    dotnet restore $DOTNET_PROJECT_PATH
 
             -   name: Build
                 run: dotnet build --no-restore --configuration Release $DOTNET_PROJECT_PATH
