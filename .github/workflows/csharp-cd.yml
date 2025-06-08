@@ -245,11 +245,25 @@ jobs:
                 id: set-artifact-matrix
                 shell: bash
                 run: |
-                    files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | while IFS= read -r -d '' file; do
-                      filename=$(basename "$file")
-                      jq -n --arg file "$file" --arg filename "$filename" '{file: $file, filename: $filename}'
-                    done | jq -s .)
-                    echo "files=${files}" >> "$GITHUB_OUTPUT"
+                    # Initialize an empty array for JSON objects
+                    declare -a json_objects=()
+
+                    # Loop through .nupkg files
+                    for file in csharp/**/*.nupkg csharp/**/*.snupkg; do
+                      # Check if file exists (to handle case when no matches are found)
+                      if [ -f "$file" ]; then
+                        filename=$(basename "$file")
+                        json_objects+=("{\"file\":\"$file\",\"filename\":\"$filename\"}")
+                      fi
+                    done
+
+                    # Combine all JSON objects into an array and save to output
+                    if [ ${#json_objects[@]} -eq 0 ]; then
+                      echo "files=[]" >> "$GITHUB_OUTPUT"
+                    else
+                      json_array="[$(IFS=,; echo "${json_objects[*]}")]"
+                      echo "files=$json_array" >> "$GITHUB_OUTPUT"
+                    fi
 
             -   name: Upload packages to NuGet
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
@@ -305,12 +319,27 @@ jobs:
 
             -   name: Prepare file matrix for upload
                 id: set-artifact-matrix
+                shell: bash
                 run: |
-                    files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | while IFS= read -r -d '' file; do
-                    filename=$(basename "$file")
-                    jq -n --arg file "$file" --arg filename "$filename" '{file: $file, filename: $filename}'
-                    done | jq -s .)
-                    echo "files=$files" >> $GITHUB_OUTPUT
+                    # Initialize an empty array for JSON objects
+                    declare -a json_objects=()
+
+                    # Loop through .nupkg files
+                    for file in csharp/**/*.nupkg csharp/**/*.snupkg; do
+                      # Check if file exists (to handle case when no matches are found)
+                      if [ -f "$file" ]; then
+                        filename=$(basename "$file")
+                        json_objects+=("{\"file\":\"$file\",\"filename\":\"$filename\"}")
+                      fi
+                    done
+
+                    # Combine all JSON objects into an array and save to output
+                    if [ ${#json_objects[@]} -eq 0 ]; then
+                      echo "files=[]" >> "$GITHUB_OUTPUT"
+                    else
+                      json_array="[$(IFS=,; echo "${json_objects[*]}")]"
+                      echo "files=$json_array" >> "$GITHUB_OUTPUT"
+                    fi
 
             -   name: Upload packages to NuGet
                 working-directory: csharp
