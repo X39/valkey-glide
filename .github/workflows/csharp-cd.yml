@@ -247,18 +247,37 @@ jobs:
                 with:
                     nuget-version: latest
 
-            -   name: Restore dependencies
+            -   name: Restore dependencies - Bash
+                if: ${{ matrix.build.TARGET != 'x86_64-pc-windows-msvc' }}
+                shell: bash
                 run: |
-                    echo dotnet restore $DOTNET_PROJECT_PATH
-                    pwd
                     dotnet restore $DOTNET_PROJECT_PATH
 
-            -   name: Build
+            -   name: Restore dependencies - Powershell
+                if: ${{ matrix.build.TARGET == 'x86_64-pc-windows-msvc' }}
+                shell: pwsh
+                run: |
+                    dotnet restore $DOTNET_PROJECT_PATH
+
+            -   name: Build - Bash
+                if: ${{ matrix.build.TARGET != 'x86_64-pc-windows-msvc' }}
+                shell: bash
                 run: dotnet build --no-restore --configuration Release $DOTNET_PROJECT_PATH
 
-            -   name: Pack
+            -   name: Build - Powershell
+                if: ${{ matrix.build.TARGET == 'x86_64-pc-windows-msvc' }}
+                shell: pwsh
+                run: dotnet build --no-restore --configuration Release $DOTNET_PROJECT_PATH
+
+            -   name: Pack - Bash
+                if: ${{ matrix.build.TARGET != 'x86_64-pc-windows-msvc' }}
+                shell: bash
                 run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
-                # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
+
+            -   name: Pack - Powershell
+                if: ${{ matrix.build.TARGET == 'x86_64-pc-windows-msvc' }}
+                shell: pwsh
+                run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
 
             -   name: Prepare file matrix for upload
                 id: set-artifact-matrix
