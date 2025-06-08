@@ -243,12 +243,13 @@ jobs:
 
             -   name: Prepare file matrix for upload
                 id: set-artifact-matrix
+                shell: bash
                 run: |
                     files=$(find csharp -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -print0 | while IFS= read -r -d '' file; do
-                    filename=$(basename "$file")
-                    jq -n --arg file "$file" --arg filename "$filename" '{file: $file, filename: $filename}'
+                      filename=$(basename "$file")
+                      jq -n --arg file "$file" --arg filename "$filename" '{file: $file, filename: $filename}'
                     done | jq -s .)
-                    echo "files=$files" >> $GITHUB_OUTPUT
+                    echo "files=${files}" >> "$GITHUB_OUTPUT"
 
             -   name: Upload packages to NuGet
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
