@@ -322,11 +322,11 @@ jobs:
                 with:
                     nuget-version: latest
 
-            - uses: actions/cache@v4
-              with:
-                  path: csharp/rust/target
-                  key: ${{ matrix.host.IMAGE }}-csharp
-                  restore-keys: ${{ matrix.host.IMAGE }}
+            -   uses: actions/cache@v4
+                with:
+                    path: csharp/rust/target
+                    key: ${{ matrix.host.IMAGE }}-csharp
+                    restore-keys: ${{ matrix.host.IMAGE }}
 
             -   name: Write `VALKEY_SKIP_BUILD_ASSETS` variable
                 run: echo "VALKEY_SKIP_BUILD_ASSETS=TRUE" >> $GITHUB_ENV
