@@ -257,7 +257,7 @@ jobs:
                 if: ${{ matrix.build.TARGET == 'x86_64-pc-windows-msvc' }}
                 shell: pwsh
                 run: |
-                    dotnet restore $DOTNET_PROJECT_PATH
+                    dotnet restore $env:DOTNET_PROJECT_PATH
 
             -   name: Build - Bash
                 if: ${{ matrix.build.TARGET != 'x86_64-pc-windows-msvc' }}
@@ -267,7 +267,7 @@ jobs:
             -   name: Build - Powershell
                 if: ${{ matrix.build.TARGET == 'x86_64-pc-windows-msvc' }}
                 shell: pwsh
-                run: dotnet build --no-restore --configuration Release $DOTNET_PROJECT_PATH
+                run: dotnet build --no-restore --configuration Release $env:DOTNET_PROJECT_PATH
 
             -   name: Pack - Bash
                 if: ${{ matrix.build.TARGET != 'x86_64-pc-windows-msvc' }}
@@ -277,7 +277,7 @@ jobs:
             -   name: Pack - Powershell
                 if: ${{ matrix.build.TARGET == 'x86_64-pc-windows-msvc' }}
                 shell: pwsh
-                run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
+                run: dotnet pack --no-build --configuration Release $env:DOTNET_PROJECT_PATH
 
             -   name: Prepare file matrix for upload
                 id: set-artifact-matrix
@@ -304,7 +304,7 @@ jobs:
                     fi
 
             -   name: Upload artifacts
-                uses: actions/upload-artifact@v4
+                uses: actions/upload-artifact/merge@v4
                 with:
                     name: nuget-packages
                     path: |
@@ -394,7 +394,7 @@ jobs:
                     fi
 
             -   name: Upload artifacts
-                uses: actions/upload-artifact@v4
+                uses: actions/upload-artifact/merge@v4
                 with:
                     name: nuget-packages
                     path: |
