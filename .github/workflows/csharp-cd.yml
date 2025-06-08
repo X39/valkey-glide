@@ -240,7 +240,7 @@ jobs:
                 run: dotnet pack --no-build --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            -   name: [DEBUG] Output files
+            -   name: \[DEBUG\] Output files
                 working-directory: csharp
                 shell: bash
                 run: find .
@@ -329,7 +329,7 @@ jobs:
                 run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
-            -   name: [DEBUG] Output files
+            -   name: \[DEBUG\] Output files
                 working-directory: csharp
                 shell: bash
                 run: find .
