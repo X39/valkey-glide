@@ -241,6 +241,8 @@ jobs:
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
             -   name: [DEBUG] Output files
+                working-directory: csharp
+                shell: bash
                 run: find .
 
             -   name: Prepare file matrix for upload
@@ -328,6 +330,8 @@ jobs:
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
             -   name: [DEBUG] Output files
+                working-directory: csharp
+                shell: bash
                 run: find .
 
             -   name: Prepare file matrix for upload
