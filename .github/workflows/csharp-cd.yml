@@ -365,8 +365,7 @@ jobs:
 
             -   name: Pack
                 working-directory: csharp
-                if: ${{ github.event_name == 'push' || inputs.publish == true }}
-                run: dotnet pack --configuration Release $DOTNET_PROJECT_PATH
+                run: dotnet pack --configuration Release
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
             -   name: Prepare file matrix for upload
