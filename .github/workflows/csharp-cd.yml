@@ -323,6 +323,47 @@ jobs:
                 run: find .
 
 
+    publish-all-assets-nuget:
+        name: Publish All Assets Package to NuGet
+        needs: publish-assets
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    submodules: "true"
+
+            -   name: Set up dotnet
+                uses: actions/setup-dotnet@v4
+                with:
+                    dotnet-version: |
+                        9
+                        8.0.x
+
+            -   name: Setup NuGet.exe for use with actions
+                uses: NuGet/setup-nuget@v1.0.5
+                with:
+                    nuget-version: latest
+
+            -   name: Set `VALKEY_SKIP_BUILD_ASSETS` variable
+                run: echo "VALKEY_SKIP_BUILD_ASSETS=TRUE" >> $GITHUB_ENV
+
+            -   name: Pack All Assets
+                # We run --no-build here as the All package is only linking the other asset packages.
+                run: dotnet pack --no-build --configuration Release csharp/assets/Valkey.Glide.Assets.All/Valkey.Glide.Assets.All.csproj
+
+            -   name: Upload artifacts
+                uses: actions/upload-artifact@v4
+                with:
+                    name: NuGet All Assets Package
+                    path: |
+                        csharp/assets/Valkey.Glide.Assets.All/bin/Release/*.nupkg
+                        csharp/assets/Valkey.Glide.Assets.All/bin/Release/*.snupkg
+
+            -   name: Upload packages to NuGet
+                if: ${{ github.event_name == 'push' || inputs.publish == true }}
+                run: dotnet nuget push csharp/assets/Valkey.Glide.Assets.All/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+
     publish-dotnet-projects-nuget:
         name: Publish normal packages to NuGet
         needs: publish-assets
