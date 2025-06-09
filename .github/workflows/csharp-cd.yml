@@ -196,7 +196,7 @@ jobs:
                             found=1
                             break
                         fi
-                    done < <(find . -type f -name "*.csproj")
+                    done < <(find ./csharp/assets/ -type f -name "*.csproj")
 
                     if [[ "$found" -eq 0 ]]; then
                         echo "No matching project found for TARGET=$TARGET"
@@ -352,20 +352,40 @@ jobs:
                     key: ${{ matrix.host.IMAGE }}-csharp
                     restore-keys: ${{ matrix.host.IMAGE }}
 
-            -   name: Write `VALKEY_SKIP_BUILD_ASSETS` variable
+            -   name: Set `VALKEY_SKIP_BUILD_ASSETS` variable
                 run: echo "VALKEY_SKIP_BUILD_ASSETS=TRUE" >> $GITHUB_ENV
 
+            -   name: Find source projects
+                id: find-projects
+                shell: bash
+                run: |
+                    projects=$(find ./csharp/sources -name "*.csproj" -type f)
+                    echo "Found projects: $projects"
+                    echo "DOTNET_PROJECTS=$projects" >> $GITHUB_ENV
+
             -   name: Restore dependencies
-                working-directory: csharp
-                run: dotnet restore
+                shell: bash
+                run: |
+                    for project in $DOTNET_PROJECTS; do
+                        echo "Restoring $project"
+                        dotnet restore "$project"
+                    done
 
             -   name: Build
-                working-directory: csharp
-                run: dotnet build --no-restore --configuration Release
+                shell: bash
+                run: |
+                    for project in $DOTNET_PROJECTS; do
+                        echo "Building $project"
+                        dotnet build --no-restore --configuration Release "$project"
+                    done
 
             -   name: Pack
-                working-directory: csharp
-                run: dotnet pack --configuration Release
+                shell: bash
+                run: |
+                    for project in $DOTNET_PROJECTS; do
+                        echo "Packing $project"
+                        dotnet pack --no-build --configuration Release "$project"
+                    done
                 # run: dotnet pack --configuration Release --version-suffix ${{ github.sha }} $DOTNET_PROJECT_PATH
 
             -   name: Prepare file matrix for upload
@@ -401,11 +421,18 @@ jobs:
                         csharp/**/*.snupkg
 
             -   name: Upload packages to NuGet
-                working-directory: csharp
                 if: ${{ github.event_name == 'push' || inputs.publish == true }}
+                shell: bash
                 run: |
-                    dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
-                    dotnet nuget push $DOTNET_PROJECT_PATH/bin/Release/*.snupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+                    for project in $DOTNET_PROJECTS; do
+                        project_dir=$(dirname "$project")
+                        echo "Publishing packages from $project_dir/bin/Release"
+                        for package in "$project_dir"/bin/Release/*.{nupkg,snupkg}; do
+                            if [ -f "$package" ]; then
+                                dotnet nuget push "$package" -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
+                            fi
+                        done
+                    done
 
             -   name: DEBUG - Output files
                 if: always()
