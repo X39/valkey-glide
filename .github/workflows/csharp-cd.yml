@@ -341,7 +341,11 @@ jobs:
             -   name: Set `VALKEY_SKIP_BUILD_ASSETS` variable
                 run: echo "VALKEY_SKIP_BUILD_ASSETS=TRUE" >> $GITHUB_ENV
 
-            -   name: Pack All Assets
+            -   name: Restore "All Assets"
+                # We run --no-build here as the All package is only linking the other asset packages.
+                run: dotnet restore csharp/assets/Valkey.Glide.Assets.All/Valkey.Glide.Assets.All.csproj
+
+            -   name: Pack "All Assets"
                 # We run --no-build here as the All package is only linking the other asset packages.
                 run: dotnet pack --no-build --configuration Release csharp/assets/Valkey.Glide.Assets.All/Valkey.Glide.Assets.All.csproj
 
