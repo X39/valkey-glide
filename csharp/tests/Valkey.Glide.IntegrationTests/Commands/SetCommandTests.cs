@@ -12,7 +12,7 @@ public class SetCommandTests(ValkeySingleAspireFixture fixture) : IClassFixture<
     {
         // Arrange
         const string key = nameof(SetCommandTests) + "-" + nameof(SimpleSetAsync);
-        using var glideClient = new GlideClient(fixture.ConnectionRequest);
+        using var glideClient = new GlideClient(fixture.SingleConnectionRequest);
 
         // Act
         // Assert

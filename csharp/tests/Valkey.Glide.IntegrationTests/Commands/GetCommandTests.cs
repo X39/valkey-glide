@@ -9,7 +9,7 @@ public class GetCommandTests(ValkeySingleAspireFixture fixture) : IClassFixture<
     public async Task NonExistingKeyReturnsNull()
     {
         // Arrange
-        using var glideClient = new GlideClient(fixture.ConnectionRequest);
+        using var glideClient = new GlideClient(fixture.SingleConnectionRequest);
 
         // Act
         var result = await glideClient.GetAsync("does-not-exist");
@@ -22,7 +22,7 @@ public class GetCommandTests(ValkeySingleAspireFixture fixture) : IClassFixture<
     public async Task ExistingKeyReturnsValue()
     {
         // Arrange
-        using var glideClient = new GlideClient(fixture.ConnectionRequest);
+        using var glideClient = new GlideClient(fixture.SingleConnectionRequest);
         await glideClient.SetAsync("get-key", nameof(ExistingKeyReturnsValue));
 
         // Act

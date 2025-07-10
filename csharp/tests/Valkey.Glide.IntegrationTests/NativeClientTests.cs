@@ -13,7 +13,7 @@ public class NativeClientTests(ValkeySingleAspireFixture fixture) : IClassFixtur
     {
         // Arrange
         // Act
-        using NativeClient nativeClient = new(fixture.ConnectionRequest);
+        using NativeClient nativeClient = new(fixture.SingleConnectionRequest);
         // Assert
         Assert.NotNull(nativeClient);
     }
@@ -21,7 +21,7 @@ public class NativeClientTests(ValkeySingleAspireFixture fixture) : IClassFixtur
     [Fact]
     public async Task CanSendGetCommandAsync()
     {
-        using NativeClient nativeClient = new(fixture.ConnectionRequest);
+        using NativeClient nativeClient = new(fixture.SingleConnectionRequest);
         var result = await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), "test");
         Assert.Equivalent(InterOp.EValueKind.None, result.Kind);
     }
@@ -38,7 +38,7 @@ public class NativeClientTests(ValkeySingleAspireFixture fixture) : IClassFixtur
     public async Task CanSendGetCommandWithSmallStringOptimization(int argsCount)
     {
         Assert.InRange(argsCount, 0, int.MaxValue);
-        using NativeClient nativeClient = new(fixture.ConnectionRequest);
+        using NativeClient nativeClient = new(fixture.SingleConnectionRequest);
         var result =
             await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), new string('0', argsCount));
         Assert.Equivalent(InterOp.EValueKind.None, result.Kind);
@@ -56,7 +56,7 @@ public class NativeClientTests(ValkeySingleAspireFixture fixture) : IClassFixtur
     public async Task CanSendSetCommandWithSmallStringOptimization(int argsCount)
     {
         Assert.InRange(argsCount, 2, int.MaxValue);
-        using NativeClient nativeClient = new(fixture.ConnectionRequest);
+        using NativeClient nativeClient = new(fixture.SingleConnectionRequest);
         var result = await nativeClient.SendCommandAsync(ERequestType.Set, new NoRouting(),
             new string('0', argsCount), string.Concat("\"", new string('0', argsCount - 2), "\""));
         Assert.Equivalent(InterOp.EValueKind.Okay, result.Kind);
@@ -65,7 +65,7 @@ public class NativeClientTests(ValkeySingleAspireFixture fixture) : IClassFixtur
     [Fact]
     public async Task CanRunConcurrently()
     {
-        using NativeClient nativeClient = new(fixture.ConnectionRequest);
+        using NativeClient nativeClient = new(fixture.SingleConnectionRequest);
         await Parallel.ForAsync(0, 1000,
             new ParallelOptions {MaxDegreeOfParallelism = 1000, TaskScheduler = TaskScheduler.Default,}, async (_, _) =>
                 await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), "test")
@@ -76,7 +76,7 @@ public class NativeClientTests(ValkeySingleAspireFixture fixture) : IClassFixtur
     public void CanDoubleDispose()
     {
         // Arrange
-        NativeClient nativeClient = new(fixture.ConnectionRequest);
+        NativeClient nativeClient = new(fixture.SingleConnectionRequest);
         // Act
         nativeClient.Dispose();
         nativeClient.Dispose();

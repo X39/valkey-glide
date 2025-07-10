@@ -11,26 +11,13 @@ public sealed class ValkeySingleAspireFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        var appHost =
-            await DistributedApplicationTestingBuilder.CreateAsync<Projects.Valkey_Glide_AppHost>();
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Valkey_Glide_AppHost>();
         _distributedApplication = await appHost.BuildAsync();
         await _distributedApplication.StartAsync();
         try
         {
-            var resourceEvent =
-                await _distributedApplication.ResourceNotifications.WaitForResourceHealthyAsync(
-                    "valkey-single",
-                    WaitBehavior.StopOnResourceUnavailable
-                );
-            if (resourceEvent.Snapshot.HealthStatus is not HealthStatus.Healthy)
-                throw new Exception("Cache is not healthy, aspire initialization failed.");
-            var url = resourceEvent.Snapshot.Urls.FirstOrDefault();
-            if (url is null)
-                throw new Exception("Cache has no URL, aspire initialization failed.");
-            var uri = new Uri(url.Url);
-            Port = (ushort)uri.Port;
-            Host = uri.Host;
-            IsSecure = uri.Scheme == "https";
+            await LoadSingleMode();
+            await LoadClusterMode();
         }
         catch
         {
@@ -44,14 +31,48 @@ public sealed class ValkeySingleAspireFixture : IAsyncLifetime
             _ = new StdOutLoggingHarness();
     }
 
-    public InterOp.Node Node => new(Host, Port);
-    public bool IsSecure { get; private set; }
+    private async Task LoadSingleMode()
+    {
+        var uri = await GetValkeyConnectionUri("valkey-single");
+        SingleConnectionRequest = new InterOp.ConnectionRequest([new Node(uri.Host, (ushort) uri.Port)])
+            { TlsMode = uri.Scheme == "https" ? InterOp.ETlsMode.SecureTls : null };
+    }
 
-    public ushort Port { get; private set; }
-    public string Host { get; private set; } = string.Empty;
+    private async Task LoadClusterMode()
+    {
+        var valkeyNodeMasterUri = await GetValkeyConnectionUri("valkey-node-master");
+        var valkeyNodeAUri = await GetValkeyConnectionUri("valkey-node-a");
+        var valkeyNodeBUri = await GetValkeyConnectionUri("valkey-node-b");
+        var valkeyNodeCUri = await GetValkeyConnectionUri("valkey-node-c");
+        ClusterConnectionRequest = new InterOp.ConnectionRequest(
+            [
+                new Node(valkeyNodeMasterUri.Host, (ushort) valkeyNodeMasterUri.Port),
+                new Node(valkeyNodeAUri.Host, (ushort) valkeyNodeAUri.Port),
+                new Node(valkeyNodeBUri.Host, (ushort) valkeyNodeBUri.Port),
+                new Node(valkeyNodeCUri.Host, (ushort) valkeyNodeCUri.Port),
+            ]
+        ) { TlsMode = valkeyNodeMasterUri.Scheme == "https" ? InterOp.ETlsMode.SecureTls : null, ClusterMode = true };
+    }
 
-    public InterOp.ConnectionRequest ConnectionRequest
-        => new InterOp.ConnectionRequest([Node]) {TlsMode = IsSecure ? InterOp.ETlsMode.SecureTls : null,};
+    private InterOp.ConnectionRequest? _connectionRequest;
+
+    public InterOp.ConnectionRequest SingleConnectionRequest
+    {
+        get
+            => _connectionRequest
+               ?? throw new InvalidOperationException("Not initialized. Call InitializeAsync() first.");
+        private set => _connectionRequest = value;
+    }
+
+    private InterOp.ConnectionRequest? _clusterConnectionRequest;
+
+    public InterOp.ConnectionRequest ClusterConnectionRequest
+    {
+        get
+            => _clusterConnectionRequest
+               ?? throw new InvalidOperationException("Not initialized. Call InitializeAsync() first.");
+        private set => _clusterConnectionRequest = value;
+    }
 
     public async Task DisposeAsync()
     {
@@ -61,5 +82,22 @@ public sealed class ValkeySingleAspireFixture : IAsyncLifetime
             await _distributedApplication.DisposeAsync();
             _distributedApplication = null;
         }
+    }
+
+    private async Task<Uri> GetValkeyConnectionUri(string resourceName)
+    {
+        if (_distributedApplication is null)
+            throw new InvalidOperationException("Not initialized. Call InitializeAsync() first.");
+        var resourceEvent = await _distributedApplication.ResourceNotifications.WaitForResourceHealthyAsync(
+            resourceName,
+            WaitBehavior.StopOnResourceUnavailable
+        );
+        if (resourceEvent.Snapshot.HealthStatus is not HealthStatus.Healthy)
+            throw new Exception("Cache is not healthy, aspire initialization failed.");
+        var url = resourceEvent.Snapshot.Urls.FirstOrDefault();
+        if (url is null)
+            throw new Exception("Cache has no URL, aspire initialization failed.");
+        var uri = new Uri(url.Url);
+        return uri;
     }
 }
