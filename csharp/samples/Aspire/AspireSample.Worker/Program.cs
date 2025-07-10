@@ -7,14 +7,14 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+        var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
         builder.Services.AddValkeyGlide("valkey"); // We configure the glide client to use the "valkey" connection string here.
         // builder.Services.ConfigureValkeyGlideTransformers(builder => ...) // Optionally register custom transformers for your types (relevant for CustomCommand)
         builder.AddServiceDefaults();
 
-        WebApplication app = builder.Build();
+        var app = builder.Build();
         app.AddGlideCoreLogging();
         app.UseHttpsRedirection();
         app.UseAuthorization();

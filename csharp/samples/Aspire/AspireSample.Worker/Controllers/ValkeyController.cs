@@ -26,7 +26,7 @@ public class ValkeyController(IGlideClient glideClient) : ControllerBase
     )
     {
         // Here we use the QOL extensions for basic operations
-        string? client = await glideClient.GetAsync(key);
+        var client = await glideClient.GetAsync(key);
         return client;
     }
 

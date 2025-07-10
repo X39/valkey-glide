@@ -31,7 +31,7 @@ public sealed class NativeClient : IDisposable, INativeClient
         request.Validate();
 
         List<nint> strings = [];
-        NodeAddress[] addresses = new NodeAddress[request.Addresses.Length];
+        var addresses = new NodeAddress[request.Addresses.Length];
         try
         {
             fixed (NodeAddress* addressesPtr = addresses)
@@ -117,13 +117,13 @@ public sealed class NativeClient : IDisposable, INativeClient
                     addresses_length = (uint)request.Addresses.LongLength,
                     addresses = addressesPtr,
                 };
-                for (int i = 0; i < request.Addresses.Length; i++)
+                for (var i = 0; i < request.Addresses.Length; i++)
                 {
-                    Node host = request.Addresses[i];
+                    var host = request.Addresses[i];
                     addresses[i] = new NodeAddress {host = MarshalCollectingString(host.Address), port = host.Port,};
                 }
 
-                CreateClientHandleResult result = Imports.create_client_handle(nativeRequest);
+                var result = Imports.create_client_handle(nativeRequest);
                 switch (result.result)
                 {
                     case ECreateClientHandleCode.Success:
@@ -184,7 +184,7 @@ public sealed class NativeClient : IDisposable, INativeClient
         {
             if (input is null)
                 return null;
-            byte* ptr = MarshalUtf8String(input);
+            var ptr = MarshalUtf8String(input);
             strings.Add((nint)ptr);
             return ptr;
         }
@@ -194,7 +194,7 @@ public sealed class NativeClient : IDisposable, INativeClient
     {
         if (buffer is null)
             return;
-        nint ptr = (nint)(buffer - 1);
+        var ptr = (nint)(buffer - 1);
         if (Marshal.ReadByte(ptr) == 0) // Is allocated on heap
             Marshal.FreeCoTaskMem(ptr);
     }
@@ -203,14 +203,14 @@ public sealed class NativeClient : IDisposable, INativeClient
     {
         if (buffer is null && bufferLength is not 0)
             throw new ArgumentException("Buffer is null and bufferLength is not 0", nameof(buffer));
-        byte[] utf8 = Encoding.UTF8.GetBytes(s);
+        var utf8 = Encoding.UTF8.GetBytes(s);
         if (bufferLength is 0 || utf8.Length > bufferLength - 2)
         {
-            nint ptr = Marshal.AllocHGlobal(utf8.Length + 2);
+            var ptr = Marshal.AllocHGlobal(utf8.Length + 2);
             fixed (byte* utf8Ptr = utf8)
             {
                 Marshal.WriteByte(ptr, 0); // Is allocated on heap
-                for (int i = 0; i < utf8.Length; i++)
+                for (var i = 0; i < utf8.Length; i++)
                     Marshal.WriteByte(ptr + i + 1, utf8Ptr[i]);
                 Marshal.WriteByte(ptr + utf8.Length + 1, 0);
             }
@@ -219,11 +219,11 @@ public sealed class NativeClient : IDisposable, INativeClient
         }
         else
         {
-            nint ptr = (nint)buffer;
+            var ptr = (nint)buffer;
             fixed (byte* utf8Ptr = utf8)
             {
                 Marshal.WriteByte(ptr, 1); // Is allocated on buffer (potentially stack)
-                for (int i = 0; i < utf8.Length; i++)
+                for (var i = 0; i < utf8.Length; i++)
                     Marshal.WriteByte(ptr + i + 1, utf8Ptr[i]);
                 Marshal.WriteByte(ptr + utf8.Length + 1, 0);
             }
@@ -239,7 +239,7 @@ public sealed class NativeClient : IDisposable, INativeClient
     {
         try
         {
-            GCHandle dataHandle = GCHandle.FromIntPtr(data);
+            var dataHandle = GCHandle.FromIntPtr(data);
             TaskCompletionSource<Value>? commandCallbackData;
             try
             {
@@ -250,10 +250,10 @@ public sealed class NativeClient : IDisposable, INativeClient
                 dataHandle.Free();
             }
 
-            Value value = FromNativeValue(payload);
+            var value = FromNativeValue(payload);
             if (success != 0 /* is true */)
                 commandCallbackData.SetResult(value);
-            else if (value.IsString(out string message))
+            else if (value.IsString(out var message))
                 commandCallbackData.SetException(new Exception(message));
             else
                 commandCallbackData.SetException(new Exception("Unknown error"));
@@ -294,29 +294,29 @@ public sealed class NativeClient : IDisposable, INativeClient
             throw new ObjectDisposedException(nameof(NativeClient), "ClientHandle is null");
         TaskCompletionSource<Value> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        GCHandle dataHandle = GCHandle.Alloc(tcs, GCHandleType.Normal);
+        var dataHandle = GCHandle.Alloc(tcs, GCHandleType.Normal);
         var bytes = new List<nint>();
         try
         {
-            byte*[] argsArr = new byte*[args.Length];
+            var argsArr = new byte*[args.Length];
             try
             {
                 if (args.Length <= SmallStringOptimizationArgs)
                 {
-                    for (int i = 0; i < args.Length; i++)
+                    for (var i = 0; i < args.Length; i++)
                     {
                         // ReSharper disable once StackAllocInsideLoop
                         // We do this intentionally here in a "low allocation" (max: 20 * 100 bytes) environment
-                        byte* buffer = stackalloc byte[SmallStringOptimizationBuffer];
-                        byte* ptr = MarshalUtf8String(args[i], buffer, SmallStringOptimizationBuffer);
+                        var buffer = stackalloc byte[SmallStringOptimizationBuffer];
+                        var ptr = MarshalUtf8String(args[i], buffer, SmallStringOptimizationBuffer);
                         argsArr[i] = ptr;
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < args.Length; i++)
+                    for (var i = 0; i < args.Length; i++)
                     {
-                        byte* ptr = MarshalUtf8String(args[i]);
+                        var ptr = MarshalUtf8String(args[i]);
                         argsArr[i] = ptr;
                     }
                 }
@@ -359,7 +359,7 @@ public sealed class NativeClient : IDisposable, INativeClient
             }
             finally
             {
-                foreach (byte* t in argsArr)
+                foreach (var t in argsArr)
                 {
                     MarshalFree(t);
                 }
@@ -382,14 +382,14 @@ public sealed class NativeClient : IDisposable, INativeClient
         {
             if (input is null)
                 return null;
-            byte* ptr = MarshalUtf8String(input);
+            var ptr = MarshalUtf8String(input);
             bytes.Add((nint)ptr);
             return ptr;
         }
 
         nint MarshalCollectingBytes(int size)
         {
-            nint ptr = Marshal.AllocHGlobal(size);
+            var ptr = Marshal.AllocHGlobal(size);
             bytes.Add(ptr);
             return ptr;
         }
@@ -409,9 +409,9 @@ public sealed class NativeClient : IDisposable, INativeClient
                     return Value.CreateString(HelperMethods.HandleString(input.data.ptr, (int)input.length, false));
                 case Native.EValueKind.Array:
                     {
-                        Value[] array = new Value[input.length];
-                        Native.Value* ptr = (Native.Value*)input.data.ptr;
-                        for (int i = 0; i < input.length; i++)
+                        var array = new Value[input.length];
+                        var ptr = (Native.Value*)input.data.ptr;
+                        for (var i = 0; i < input.length; i++)
                         {
                             array[i] = FromNativeValue(ptr[i], false);
                         }
@@ -424,12 +424,12 @@ public sealed class NativeClient : IDisposable, INativeClient
                     return Value.CreateOkay();
                 case Native.EValueKind.Map:
                     {
-                        KeyValuePair<Value, Value>[] array = new KeyValuePair<Value, Value>[input.length];
-                        Native.Value* ptr = (Native.Value*)input.data.ptr;
+                        var array = new KeyValuePair<Value, Value>[input.length];
+                        var ptr = (Native.Value*)input.data.ptr;
                         for (int i = 0, j = 0; i < input.length; i++, j += 2)
                         {
-                            Value key = FromNativeValue(ptr[j], false);
-                            Value value = FromNativeValue(ptr[j + 1], false);
+                            var key = FromNativeValue(ptr[j], false);
+                            var value = FromNativeValue(ptr[j + 1], false);
                             array[i] = new KeyValuePair<Value, Value>(key, value);
                         }
 
@@ -439,9 +439,9 @@ public sealed class NativeClient : IDisposable, INativeClient
                     throw new NotImplementedException();
                 case Native.EValueKind.Set:
                     {
-                        Value[] array = new Value[input.length];
-                        Native.Value* ptr = (Native.Value*)input.data.ptr;
-                        for (int i = 0; i < input.length; i++)
+                        var array = new Value[input.length];
+                        var ptr = (Native.Value*)input.data.ptr;
+                        for (var i = 0; i < input.length; i++)
                         {
                             array[i] = FromNativeValue(ptr[i], false);
                         }
@@ -454,9 +454,9 @@ public sealed class NativeClient : IDisposable, INativeClient
                     return Value.CreateBoolean(input.data.i != 0);
                 case Native.EValueKind.VerbatimString:
                     {
-                        StringPair* ptr = (StringPair*)input.data.ptr;
-                        string? key = HelperMethods.HandleString(ptr->a_start, (int)(ptr->a_end - ptr->a_start), false);
-                        string? value = HelperMethods.HandleString(ptr->a_start, (int)(ptr->a_end - ptr->a_start), false);
+                        var ptr = (StringPair*)input.data.ptr;
+                        var key = HelperMethods.HandleString(ptr->a_start, (int)(ptr->a_end - ptr->a_start), false);
+                        var value = HelperMethods.HandleString(ptr->a_start, (int)(ptr->a_end - ptr->a_start), false);
 
                         return Value.CreateFormatString(key, value);
                     }

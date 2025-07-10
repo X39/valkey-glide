@@ -14,7 +14,7 @@ internal static class HelperMethods
             return null;
         try
         {
-            int len = length ?? Strlen(resultErrorString);
+            var len = length ?? Strlen(resultErrorString);
             return Encoding.UTF8.GetString(resultErrorString, len);
         }
         finally
@@ -26,7 +26,7 @@ internal static class HelperMethods
 
     internal static unsafe int Strlen(byte* input)
     {
-        int i = 0;
+        var i = 0;
         for (; input[i] != 0; i++)
             ;
         return i;

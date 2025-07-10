@@ -21,13 +21,13 @@ public sealed class ConnectionStringParser
     /// </exception>
     public static ConnectionRequest Parse(string connectionString)
     {
-        ConnectionConfigBuilder builder = new ConnectionConfigBuilder();
-        foreach (string s in connectionString.Split(
+        var builder = new ConnectionConfigBuilder();
+        foreach (var s in connectionString.Split(
                      ';',
                      StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
                  ))
         {
-            string[] splatted = s.Split("=", StringSplitOptions.TrimEntries);
+            var splatted = s.Split("=", StringSplitOptions.TrimEntries);
 
             if (splatted.Length is 1 && s.Contains(':'))
             {
@@ -38,17 +38,17 @@ public sealed class ConnectionStringParser
                     && splatted[1]
                         .All(char.IsDigit))
                 {
-                    string host = splatted[0];
-                    string port = splatted[1];
+                    var host = splatted[0];
+                    var port = splatted[1];
                     builder.WithAddress(host, ushort.Parse(port));
                     continue;
                 }
             }
 
-            string key = splatted.FirstOrDefault() ?? string.Empty;
-            string value = splatted.Skip(1)
-                               .FirstOrDefault()
-                           ?? string.Empty;
+            var key = splatted.FirstOrDefault() ?? string.Empty;
+            var value = splatted.Skip(1)
+                            .FirstOrDefault()
+                        ?? string.Empty;
             switch (key.ToLower())
             {
                 case "host":
@@ -136,20 +136,20 @@ public sealed class ConnectionStringParser
 
     private static void ParseConnectionStringHost(string value, ConnectionConfigBuilder builder)
     {
-        string[] listValues = value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var listValues = value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (listValues.Length is 0)
             throw new FormatException("Invalid host in connection string: " + value);
-        foreach (string localValue in listValues)
+        foreach (var localValue in listValues)
         {
-            string[] splatted = localValue.Split(":", StringSplitOptions.TrimEntries);
+            var splatted = localValue.Split(":", StringSplitOptions.TrimEntries);
             switch (splatted.Length)
             {
                 case 2:
                 {
-                    string host = splatted[0];
+                    var host = splatted[0];
                     if (string.IsNullOrWhiteSpace(host))
                         throw new FormatException("Invalid host in connection string: " + localValue);
-                    string port = splatted[1];
+                    var port = splatted[1];
                     builder.WithAddress(host, ushort.Parse(port));
                     break;
                 }

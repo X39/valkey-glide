@@ -5,29 +5,29 @@ using Valkey.Glide.InterOp.Native;
 
 namespace Valkey.Glide.IntegrationTests.Fixtures;
 
-public sealed class ValkeyAspireFixture : IAsyncLifetime
+public sealed class ValkeySingleAspireFixture : IAsyncLifetime
 {
     private DistributedApplication? _distributedApplication;
 
     public async Task InitializeAsync()
     {
-        IDistributedApplicationTestingBuilder appHost =
+        var appHost =
             await DistributedApplicationTestingBuilder.CreateAsync<Projects.Valkey_Glide_AppHost>();
         _distributedApplication = await appHost.BuildAsync();
         await _distributedApplication.StartAsync();
         try
         {
-            ResourceEvent resourceEvent =
+            var resourceEvent =
                 await _distributedApplication.ResourceNotifications.WaitForResourceHealthyAsync(
-                    "cache",
+                    "valkey-single",
                     WaitBehavior.StopOnResourceUnavailable
                 );
             if (resourceEvent.Snapshot.HealthStatus is not HealthStatus.Healthy)
                 throw new Exception("Cache is not healthy, aspire initialization failed.");
-            UrlSnapshot? url = resourceEvent.Snapshot.Urls.FirstOrDefault();
+            var url = resourceEvent.Snapshot.Urls.FirstOrDefault();
             if (url is null)
                 throw new Exception("Cache has no URL, aspire initialization failed.");
-            Uri uri = new Uri(url.Url);
+            var uri = new Uri(url.Url);
             Port = (ushort)uri.Port;
             Host = uri.Host;
             IsSecure = uri.Scheme == "https";

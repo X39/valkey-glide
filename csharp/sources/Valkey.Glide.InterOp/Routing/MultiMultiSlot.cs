@@ -17,7 +17,7 @@ public sealed class MultiMultiSlot(EResponsePolicy responsePolicy, EArgPattern a
     // ToDo: Add documentation for responsePolicy
     public unsafe RoutingInfo? ToNative(MarshalString marshalString, MarshalBytes marshalBytes)
     {
-        RoutingInfoMultiSlotPair* routesPtr = (RoutingInfoMultiSlotPair*)marshalBytes(sizeof(RoutingInfoMultiSlotPair) * routes.Length);
+        var routesPtr = (RoutingInfoMultiSlotPair*)marshalBytes(sizeof(RoutingInfoMultiSlotPair) * routes.Length);
         for (var i = 0; i < routes.Length; i++)
         {
             var (route, something) = routes[i];

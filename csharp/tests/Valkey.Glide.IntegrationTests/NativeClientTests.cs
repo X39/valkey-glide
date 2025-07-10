@@ -6,7 +6,7 @@ using Value = Valkey.Glide.InterOp.Value;
 
 namespace Valkey.Glide.IntegrationTests;
 
-public class NativeClientTests(ValkeyAspireFixture fixture) : IClassFixture<ValkeyAspireFixture>
+public class NativeClientTests(ValkeySingleAspireFixture fixture) : IClassFixture<ValkeySingleAspireFixture>
 {
     [Fact]
     public void CanCreateClient()
@@ -22,7 +22,7 @@ public class NativeClientTests(ValkeyAspireFixture fixture) : IClassFixture<Valk
     public async Task CanSendGetCommandAsync()
     {
         using NativeClient nativeClient = new(fixture.ConnectionRequest);
-        Value result = await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), "test");
+        var result = await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), "test");
         Assert.Equivalent(InterOp.EValueKind.None, result.Kind);
     }
 
@@ -39,7 +39,7 @@ public class NativeClientTests(ValkeyAspireFixture fixture) : IClassFixture<Valk
     {
         Assert.InRange(argsCount, 0, int.MaxValue);
         using NativeClient nativeClient = new(fixture.ConnectionRequest);
-        Value result =
+        var result =
             await nativeClient.SendCommandAsync(ERequestType.Get, new NoRouting(), new string('0', argsCount));
         Assert.Equivalent(InterOp.EValueKind.None, result.Kind);
     }
@@ -57,7 +57,7 @@ public class NativeClientTests(ValkeyAspireFixture fixture) : IClassFixture<Valk
     {
         Assert.InRange(argsCount, 2, int.MaxValue);
         using NativeClient nativeClient = new(fixture.ConnectionRequest);
-        Value result = await nativeClient.SendCommandAsync(ERequestType.Set, new NoRouting(),
+        var result = await nativeClient.SendCommandAsync(ERequestType.Set, new NoRouting(),
             new string('0', argsCount), string.Concat("\"", new string('0', argsCount - 2), "\""));
         Assert.Equivalent(InterOp.EValueKind.Okay, result.Kind);
     }

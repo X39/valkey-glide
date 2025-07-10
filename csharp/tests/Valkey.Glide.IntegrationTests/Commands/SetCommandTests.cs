@@ -3,7 +3,7 @@ using Valkey.Glide.IntegrationTests.Fixtures;
 
 namespace Valkey.Glide.IntegrationTests.Commands;
 
-public class SetCommandTests(ValkeyAspireFixture fixture) : IClassFixture<ValkeyAspireFixture>
+public class SetCommandTests(ValkeySingleAspireFixture fixture) : IClassFixture<ValkeySingleAspireFixture>
 {
     [Theory]
     [InlineData("foobar")]
@@ -12,7 +12,7 @@ public class SetCommandTests(ValkeyAspireFixture fixture) : IClassFixture<Valkey
     {
         // Arrange
         const string key = nameof(SetCommandTests) + "-" + nameof(SimpleSetAsync);
-        using GlideClient glideClient = new GlideClient(fixture.ConnectionRequest);
+        using var glideClient = new GlideClient(fixture.ConnectionRequest);
 
         // Act
         // Assert

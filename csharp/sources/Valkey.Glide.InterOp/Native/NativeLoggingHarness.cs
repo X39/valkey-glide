@@ -85,7 +85,7 @@ public abstract unsafe class NativeLoggingHarness
         _eventCallbackFptr = Marshal.GetFunctionPointerForDelegate(_eventCallback);
         _enterCallbackFptr = Marshal.GetFunctionPointerForDelegate(_enterCallback);
         _exitCallbackFptr = Marshal.GetFunctionPointerForDelegate(_exitCallback);
-        GCHandle dataHandle = GCHandle.Alloc(this, GCHandleType.Normal);
+        var dataHandle = GCHandle.Alloc(this, GCHandleType.Normal);
         Native.Imports.set_logging_hooks(
             GCHandle.ToIntPtr(dataHandle),
             _isEnabledCallbackFptr,
@@ -101,8 +101,8 @@ public abstract unsafe class NativeLoggingHarness
     {
         try
         {
-            GCHandle dataHandle = GCHandle.FromIntPtr(data);
-            NativeLoggingHarness? self = (NativeLoggingHarness)dataHandle.Target;
+            var dataHandle = GCHandle.FromIntPtr(data);
+            var self = (NativeLoggingHarness)dataHandle.Target;
             action(self);
         }
         catch (Exception e)
@@ -124,8 +124,8 @@ public abstract unsafe class NativeLoggingHarness
     {
         try
         {
-            GCHandle dataHandle = GCHandle.FromIntPtr(data);
-            NativeLoggingHarness? self = (NativeLoggingHarness)dataHandle.Target;
+            var dataHandle = GCHandle.FromIntPtr(data);
+            var self = (NativeLoggingHarness)dataHandle.Target;
             return action(self);
         }
         catch (Exception e)

@@ -28,10 +28,10 @@ public static class GetCommands
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
 
-        Value result = await GetCommand.Create(key).ExecuteAsync(client);
+        var result = await GetCommand.Create(key).ExecuteAsync(client);
         if (result.IsNone())
             return null;
-        if (result.IsString(out string? text))
+        if (result.IsString(out var text))
             return text;
 
         throw new GlideGetCommandFailedException(key, result);

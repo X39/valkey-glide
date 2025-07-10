@@ -34,7 +34,7 @@ public sealed class StdOutLoggingHarness : BaseLoggingHarness
 
         // Fields
         builder.Append("\"Fields\": { ");
-        foreach (KeyValuePair<string,string> keyValuePair in fields)
+        foreach (var keyValuePair in fields)
         {
             builder.Append($"\"{keyValuePair.Key}\": \"{keyValuePair.Value}\", ");
         }
@@ -70,7 +70,7 @@ public sealed class StdOutLoggingHarness : BaseLoggingHarness
         builder.Append("[Glide Core][OnRecord]: { ");
         builder.Append($"\"Message\": \"{message}\", ");
         builder.Append("\"Fields\": { ");
-        foreach (KeyValuePair<string,string> keyValuePair in fields)
+        foreach (var keyValuePair in fields)
         {
             builder.Append($"\"{keyValuePair.Key}\": \"{keyValuePair.Value}\", ");
         }
@@ -96,7 +96,7 @@ public sealed class StdOutLoggingHarness : BaseLoggingHarness
 
         // Fields
         builder.Append("\"Fields\": { ");
-        foreach (KeyValuePair<string,string> keyValuePair in fields)
+        foreach (var keyValuePair in fields)
         {
             builder.Append($"\"{keyValuePair.Key}\": \"{keyValuePair.Value}\", ");
         }

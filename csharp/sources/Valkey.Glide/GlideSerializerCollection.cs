@@ -60,7 +60,7 @@ public sealed class GlideSerializerCollection
             throw new InvalidOperationException(Properties.Language.GlideTransformer_NotSealedError);
         if (t is IHasGlideSerializer<T> hasGlideTransformer)
             return hasGlideTransformer.GetGlideSerializer().ToValkey(t);
-        IGlideSerializer<T> serializer = (IGlideSerializer<T>)_serializersDict[typeof(T)];
+        var serializer = (IGlideSerializer<T>)_serializersDict[typeof(T)];
         return serializer.ToValkey(t);
     }
 

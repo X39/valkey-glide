@@ -68,10 +68,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ConnectionRequest>(
             serviceProvider =>
             {
-                IConfiguration configuration = serviceProvider.GetRequiredService<IConfiguration>();
+                var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
                 // Read ValKey connection string
-                string? connectionString = configuration[string.Concat("ConnectionStrings:", resourceName)];
+                var connectionString = configuration[string.Concat("ConnectionStrings:", resourceName)];
                 if (string.IsNullOrWhiteSpace(connectionString))
                     throw new InvalidOperationException(
                         $"Connection string '{resourceName}' not found in IConfiguration[\"ConnectionStrings:{resourceName}\"]."
@@ -106,7 +106,7 @@ public static class ServiceCollectionExtensions
     {
         ConnectionConfigBuilder builder = new();
         configure(builder);
-        ConnectionRequest config = builder.Build();
+        var config = builder.Build();
         return AddValkeyGlide(services, config, loggingHarness);
     }
 
@@ -144,19 +144,19 @@ public static class ServiceCollectionExtensions
         => services.AddTransient<IGlideClient, GlideClient>(
             serviceProvider =>
             {
-                IEnumerable<GlideSerializerCollectionBuilder> glideTransformerBuilders =
+                var glideTransformerBuilders =
                     serviceProvider.GetServices<GlideSerializerCollectionBuilder>();
                 GlideSerializerCollection glideSerializerCollection = new();
                 glideSerializerCollection.RegisterDefaultSerializers();
-                foreach (GlideSerializerCollectionBuilder glideTransformerBuilder in glideTransformerBuilders)
+                foreach (var glideTransformerBuilder in glideTransformerBuilders)
                 {
-                    foreach (Action<GlideSerializerCollection> action in glideTransformerBuilder.GetSerializers())
+                    foreach (var action in glideTransformerBuilder.GetSerializers())
                     {
                         action(glideSerializerCollection);
                     }
                 }
                 glideSerializerCollection.Seal();
-                ConnectionRequest connectionRequest = serviceProvider.GetRequiredService<ConnectionRequest>();
+                var connectionRequest = serviceProvider.GetRequiredService<ConnectionRequest>();
                 return new GlideClient(connectionRequest, glideSerializerCollection);
             });
 }
